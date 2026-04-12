@@ -1,0 +1,109 @@
+import { useState, type ChangeEvent } from "react";
+
+import type { PresenceState } from "@/features/chat/types";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import { useCreateConversation, useSearch } from "../hooks/useSearch";
+
+const DEBOUNCE_DELAY = 1000;
+
+interface UserSearchProps {
+	presenceByUserId?: Record<number, PresenceState>;
+}
+
+function formatLastSeen(value: string | null): string {
+	if (!value) {
+		return "Offline";
+	}
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) {
+		return "Offline";
+	}
+	return `Last seen ${date.toLocaleString()}`;
+}
+
+export function UserSearch({ presenceByUserId = {} }: UserSearchProps) {
+	const [query, setQuery] = useState("");
+
+	const debouncedQuery = useDebouncedValue(query, DEBOUNCE_DELAY);
+	const normalizedQuery = query.trim();
+	const normalizedDebouncedQuery = debouncedQuery.trim();
+	const isDebouncing = normalizedQuery !== normalizedDebouncedQuery;
+	const { data: searchUsers = [], isFetching } = useSearch(debouncedQuery);
+	const isSearching = isDebouncing || isFetching;
+	const { mutate: createConversationMutation, isPending: isCreatingConversation } = useCreateConversation();
+
+	const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
+		setQuery(event.target.value);
+	};
+
+	const handleSelectUser = (userId: number) => {
+		createConversationMutation(userId, {
+			onSuccess: () => {
+				setQuery("");
+			},
+		});
+	};
+
+	return (
+		<div className="mt-4 space-y-2">
+			<label className="sr-only" htmlFor="user-search-input">
+				Search users by name
+			</label>
+			<div className="flex items-center gap-2 rounded-xl border border-[#e4e7f2] bg-white px-3 py-2">
+				<svg
+					aria-hidden
+					viewBox="0 0 24 24"
+					className="h-4 w-4 text-[#9ca1bb]"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="2"
+				>
+					<circle cx="11" cy="11" r="7" />
+					<path d="m20 20-3-3" />
+				</svg>
+				<input
+					id="user-search-input"
+					value={query}
+					onChange={handleSearch}
+					placeholder="Search users by name"
+					className="w-full border-none bg-transparent text-sm text-[#2e334f] placeholder:text-[#9ca1bb] outline-none"
+					autoComplete="off"
+				/>
+			</div>
+
+			{normalizedQuery ? (
+				<div className="rounded-xl border border-[#e9ebf4] bg-white">
+					{isSearching ? (
+						<p className="px-3 py-2 text-sm text-[#8f94af]">Searching...</p>
+					) : searchUsers.length > 0 ? (
+						<ul className="max-h-[300px] overflow-y-auto">
+							{searchUsers.map((user) => {
+								return (
+									<li key={user.id} className="border-b border-[#f1f2f8] last:border-b-0">
+										<button
+											type="button"
+											className="flex w-full items-center justify-between px-3 py-2 text-left transition hover:bg-[#f8f8fe]"
+											onClick={() => {
+												handleSelectUser(user.id);
+											}}
+											disabled={isCreatingConversation}
+										>
+											<div className="flex flex-1 items-center justify-between">
+												<p className="text-sm font-medium text-[#2a2f46]">
+													{user.display_name}
+												</p>
+												<p className="text-xs text-[#8f94af]">@{user.username}</p>
+											</div>
+										</button>
+									</li>
+								);
+							})}
+						</ul>
+					) : (
+						<p className="px-3 py-2 text-sm text-[#8f94af]">No users found.</p>
+					)}
+				</div>
+			) : null}
+		</div>
+	);
+}
