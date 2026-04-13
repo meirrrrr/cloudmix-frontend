@@ -29,7 +29,7 @@ export function Sidebar({ selectedConversationId, onSelectConversation, presence
 	};
 
 	return (
-		<aside className="w-full border-r border-[#e5e7ee] bg-[#fdfdff] md:w-[510px]">
+		<aside className="w-full border-r border-[#e5e7ee] bg-[#fdfdff] w-[100%] md:w-[510px]">
 			<div className="border-b border-[#eceef4] px-6 py-5">
 				<h2 className="flex items-baseline gap-1 text-[24px] font-semibold leading-none tracking-tight text-[#232840]">
 					<span>Messages ({conversations?.length ?? 0})</span>

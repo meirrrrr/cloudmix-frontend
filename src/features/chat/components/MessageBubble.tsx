@@ -5,10 +5,7 @@ interface MessageBubbleProps {
 	animateIn?: boolean;
 }
 
-export function MessageBubble({
-	message,
-	animateIn = true,
-}: MessageBubbleProps) {
+export function MessageBubble({ message, animateIn = true }: MessageBubbleProps) {
 	const isOutgoing = message.direction === "outgoing";
 	const formattedTimestamp = formatMessageTimestamp(message.date);
 
@@ -16,9 +13,7 @@ export function MessageBubble({
 		<div className={`flex ${isOutgoing ? "justify-end" : "justify-start"}`}>
 			<div
 				className={`max-w-[78%] break-words rounded-[16px] flex items-end gap-2.5 px-5 py-3 text-[16px] font-[400] transition-all duration-300 ease-out ${
-					animateIn
-						? "translate-y-0 scale-100 opacity-100"
-						: "translate-y-2 scale-[0.98] opacity-0"
+					animateIn ? "translate-y-0 scale-100 opacity-100" : "translate-y-2 scale-[0.98] opacity-0"
 				} ${
 					isOutgoing
 						? "rounded-br-[10px] bg-[#8e5cf8] text-white"
@@ -44,24 +39,9 @@ function formatMessageTimestamp(value: string): string {
 		return "";
 	}
 
-	const now = new Date();
-	const isSameDay =
-		date.getFullYear() === now.getFullYear() &&
-		date.getMonth() === now.getMonth() &&
-		date.getDate() === now.getDate();
-
-	if (isSameDay) {
-		return date.toLocaleTimeString([], {
-			hour: "2-digit",
-			minute: "2-digit",
-			hour12: false,
-		});
-	}
-
 	return date.toLocaleString([], {
-		month: "short",
-		day: "numeric",
 		hour: "2-digit",
 		minute: "2-digit",
+		hour12: false,
 	});
 }

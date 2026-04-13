@@ -8,7 +8,10 @@ interface ConversationThreadMessagesProps {
 	currentUserId?: number;
 	visibleMessageIds: MessageVisibilityMap;
 	isHistoryLoading: boolean;
+	hasMoreHistory: boolean;
+	isLoadingMoreHistory: boolean;
 	socketError: string | null;
+	onLoadOlderHistory?: () => Promise<void> | void;
 }
 
 /**
@@ -19,13 +22,31 @@ export function ConversationThreadMessages({
 	currentUserId,
 	visibleMessageIds,
 	isHistoryLoading,
+	hasMoreHistory,
+	isLoadingMoreHistory,
 	socketError,
+	onLoadOlderHistory,
 }: ConversationThreadMessagesProps) {
 	const hasMessages = messages.length > 0;
 	const threadItems = buildThreadItems(messages);
 
 	return (
 		<div className="space-y-4">
+			{hasMoreHistory ? (
+				<div className="flex justify-center">
+					<button
+						type="button"
+						onClick={() => {
+							void onLoadOlderHistory?.();
+						}}
+						disabled={isLoadingMoreHistory || !onLoadOlderHistory}
+						className="rounded-md border px-3 py-1 text-sm"
+					>
+						{isLoadingMoreHistory ? "Loading..." : "Load older messages"}
+					</button>
+				</div>
+			) : null}
+
 			{isHistoryLoading && <DateDivider label="Today" />}
 
 			{isHistoryLoading ? (
@@ -153,3 +174,4 @@ function EmptyMessages() {
 		</div>
 	);
 }
+

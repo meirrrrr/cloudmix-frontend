@@ -8,5 +8,6 @@ export function useConversations(): UseQueryResult<Conversation[]> {
 	return useQuery({
 		queryKey: CONVERSATIONS_QUERY_KEY,
 		queryFn: getConversations,
+		staleTime: 15_000,
 	});
 }

@@ -7,11 +7,7 @@ import {
 } from "@tanstack/react-query";
 
 import { getMe, login, logout, register } from "@/features/auth/api/auth-api";
-import type {
-	AuthUser,
-	LoginRequest,
-	RegisterRequest,
-} from "@/features/auth/types";
+import type { AuthUser, LoginRequest, RegisterRequest } from "@/features/auth/types";
 
 const AUTH_QUERY_KEYS = {
 	me: ["auth", "me"] as const,
@@ -25,11 +21,7 @@ export function useMeQuery(): UseQueryResult<AuthUser> {
 	});
 }
 
-export function useLoginMutation(): UseMutationResult<
-	AuthUser,
-	Error,
-	LoginRequest
-> {
+export function useLoginMutation(): UseMutationResult<AuthUser, Error, LoginRequest> {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: login,
@@ -39,11 +31,7 @@ export function useLoginMutation(): UseMutationResult<
 	});
 }
 
-export function useRegisterMutation(): UseMutationResult<
-	AuthUser,
-	Error,
-	RegisterRequest
-> {
+export function useRegisterMutation(): UseMutationResult<AuthUser, Error, RegisterRequest> {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: register,

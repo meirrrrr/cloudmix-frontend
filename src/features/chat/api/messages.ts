@@ -1,6 +1,7 @@
 import { apiRequest, ApiError } from "@/shared/lib/api-client";
 
 import type {
+	ConversationMessagesQuery,
 	ConversationMessagesResponse,
 	CreateMessageRequest,
 	CreateMessageResponse,
@@ -22,11 +23,18 @@ const CHAT_BASE_PATH = "/api/chat";
 
 export function getConversationMessages(
 	conversationId: number,
+	query: ConversationMessagesQuery = {},
 ): Promise<ConversationMessagesResponse> {
+	const params: Record<string, string> = {};
+	if (query.limit) params.limit = String(query.limit);
+	if (query.before !== undefined) params.before = String(query.before);
+	if (query.before_created_at) params.before_created_at = query.before_created_at;
+
 	return apiRequest<ConversationMessagesResponse>(
 		`${CHAT_BASE_PATH}/conversations/${conversationId}/messages/`,
 		{
 			method: "GET",
+			params,
 		},
 	);
 }

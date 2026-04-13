@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type {
 	ChatConnectionStatus,
 	ChatErrorEvent,
+	ChatOutgoingEvent,
 	ChatMessagePayload,
 	ChatReceiveEvent,
 	ChatSendEvent,
@@ -19,7 +20,9 @@ interface UseChatWebSocketResult {
 	connectionStatus: ChatConnectionStatus;
 	realtimeMessages: ChatMessagePayload[];
 	presenceByUserId: Record<number, PresenceState>;
+	typingByUserId: Record<number, boolean>;
 	sendRealtime: (body: string) => void;
+	sendTyping: (isTyping: boolean) => void;
 	lastError: string | null;
 	closeCode: number | null;
 }
@@ -39,9 +42,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null;
 }
 
-function isParticipantPayload(
-	value: unknown,
-): value is ChatMessagePayload["sender"] {
+function isParticipantPayload(value: unknown): value is ChatMessagePayload["sender"] {
 	if (!isRecord(value)) {
 		return false;
 	}
@@ -79,11 +80,7 @@ function toChatReceiveEvent(value: unknown): ChatReceiveEvent | null {
 	}
 
 	if (value.type === "error") {
-		if (
-			value.detail !== undefined &&
-			typeof value.detail !== "string" &&
-			value.detail !== null
-		) {
+		if (value.detail !== undefined && typeof value.detail !== "string" && value.detail !== null) {
 			return null;
 		}
 		if (value.errors !== undefined && !isRecord(value.errors)) {
@@ -97,10 +94,7 @@ function toChatReceiveEvent(value: unknown): ChatReceiveEvent | null {
 					errors[key] = item;
 					continue;
 				}
-				if (
-					Array.isArray(item) &&
-					item.every((entry) => typeof entry === "string")
-				) {
+				if (Array.isArray(item) && item.every((entry) => typeof entry === "string")) {
 					errors[key] = item;
 					continue;
 				}
@@ -126,8 +120,19 @@ function toChatReceiveEvent(value: unknown): ChatReceiveEvent | null {
 			type: "presence",
 			user_id: value.user_id,
 			is_online: value.is_online,
-			last_seen_at:
-				typeof value.last_seen_at === "string" ? value.last_seen_at : null,
+			last_seen_at: typeof value.last_seen_at === "string" ? value.last_seen_at : null,
+		};
+	}
+
+	if (value.type === "typing") {
+		if (typeof value.user_id !== "number" || typeof value.is_typing !== "boolean") {
+			return null;
+		}
+
+		return {
+			type: "typing",
+			user_id: value.user_id,
+			is_typing: value.is_typing,
 		};
 	}
 	return null;
@@ -143,20 +148,14 @@ function toErrorMessage(event: ChatErrorEvent): string {
 	return JSON.stringify(event.errors);
 }
 
-export function useChatWebSocket({
-	conversationId,
-	accessToken,
-}: UseChatWebSocketOptions): UseChatWebSocketResult {
+export function useChatWebSocket({ conversationId, accessToken }: UseChatWebSocketOptions): UseChatWebSocketResult {
 	const socketRef = useRef<WebSocket | null>(null);
 	const hasRetriedWithTokenRef = useRef(false);
 
 	const [status, setStatus] = useState<ChatConnectionStatus>("idle");
-	const [realtimeMessages, setRealtimeMessages] = useState<
-		ChatMessagePayload[]
-	>([]);
-	const [presenceByUserId, setPresenceByUserId] = useState<
-		Record<number, PresenceState>
-	>({});
+	const [realtimeMessages, setRealtimeMessages] = useState<ChatMessagePayload[]>([]);
+	const [presenceByUserId, setPresenceByUserId] = useState<Record<number, PresenceState>>({});
+	const [typingByUserId, setTypingByUserId] = useState<Record<number, boolean>>({});
 	const [lastError, setLastError] = useState<string | null>(null);
 	const [closeCode, setCloseCode] = useState<number | null>(null);
 
@@ -169,6 +168,7 @@ export function useChatWebSocket({
 			setStatus("idle");
 			setRealtimeMessages([]);
 			setPresenceByUserId({});
+			setTypingByUserId({});
 			setLastError(null);
 			setCloseCode(null);
 			return;
@@ -180,6 +180,7 @@ export function useChatWebSocket({
 
 		setRealtimeMessages([]);
 		setPresenceByUserId({});
+		setTypingByUserId({});
 		setLastError(null);
 		setCloseCode(null);
 		setStatus("connecting");
@@ -190,9 +191,7 @@ export function useChatWebSocket({
 				return;
 			}
 
-			const tokenQuery = useToken
-				? `?token=${encodeURIComponent(cleanToken)}`
-				: "";
+			const tokenQuery = useToken ? `?token=${encodeURIComponent(cleanToken)}` : "";
 			const socketUrl = `${wsBase}/ws/chat/${conversationId}/${tokenQuery}`;
 			const socket = new WebSocket(socketUrl);
 			socketRef.current = socket;
@@ -231,6 +230,10 @@ export function useChatWebSocket({
 
 				if (event.type === "message") {
 					setRealtimeMessages((previous) => [...previous, event.message]);
+					setTypingByUserId((previous) => ({
+						...previous,
+						[event.message.sender.id]: false,
+					}));
 					return;
 				}
 
@@ -245,6 +248,14 @@ export function useChatWebSocket({
 					return;
 				}
 
+				if (event.type === "typing") {
+					setTypingByUserId((previous) => ({
+						...previous,
+						[event.user_id]: event.is_typing,
+					}));
+					return;
+				}
+
 				setLastError(toErrorMessage(event));
 			};
 
@@ -254,12 +265,7 @@ export function useChatWebSocket({
 				}
 				setCloseCode(event.code);
 
-				if (
-					event.code === 4401 &&
-					cleanToken &&
-					!useToken &&
-					!hasRetriedWithTokenRef.current
-				) {
+				if (event.code === 4401 && cleanToken && !useToken && !hasRetriedWithTokenRef.current) {
 					hasRetriedWithTokenRef.current = true;
 					setStatus("connecting");
 					connect(true);
@@ -300,11 +306,26 @@ export function useChatWebSocket({
 		socket.send(JSON.stringify(payload));
 	}, []);
 
+	const sendTyping = useCallback((isTyping: boolean) => {
+		const socket = socketRef.current;
+		if (!socket || socket.readyState !== WebSocket.OPEN) {
+			return;
+		}
+
+		const payload: ChatOutgoingEvent = {
+			type: "typing",
+			is_typing: isTyping,
+		};
+		socket.send(JSON.stringify(payload));
+	}, []);
+
 	return {
 		connectionStatus: status,
 		realtimeMessages,
 		presenceByUserId,
+		typingByUserId,
 		sendRealtime,
+		sendTyping,
 		lastError,
 		closeCode,
 	};

@@ -1,12 +1,6 @@
 import { env } from "@/shared/lib/env";
 
-type JsonValue =
-	| Record<string, unknown>
-	| Array<unknown>
-	| string
-	| number
-	| boolean
-	| null;
+type JsonValue = Record<string, unknown> | Array<unknown> | string | number | boolean | null;
 
 interface ApiRequestOptions extends Omit<RequestInit, "body"> {
 	body?: JsonValue;
@@ -30,11 +24,7 @@ export class ApiError extends Error {
 	}
 }
 
-function joinUrl(
-	baseUrl: string,
-	path: string,
-	params?: Record<string, string>,
-): string {
+function joinUrl(baseUrl: string, path: string, params?: Record<string, string>): string {
 	if (path.startsWith("http")) {
 		return path;
 	}
@@ -58,10 +48,7 @@ async function parseResponseBody(response: Response): Promise<unknown> {
 }
 
 async function refreshAccessToken(): Promise<boolean> {
-	const refreshUrl = joinUrl(
-		env.apiBaseUrl,
-		"/api/accounts/auth/token/refresh/",
-	);
+	const refreshUrl = joinUrl(env.apiBaseUrl, "/api/accounts/auth/token/refresh/");
 	const response = await fetch(refreshUrl, {
 		method: "POST",
 		credentials: "include",
@@ -82,10 +69,7 @@ function toApiErrorMessage(status: number, data: unknown): string {
 	return `Request failed with status ${status}.`;
 }
 
-export async function apiRequest<T>(
-	path: string,
-	options: ApiRequestOptions = {},
-): Promise<T> {
+export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
 	const { body, headers, params, ...rest } = options;
 
 	const url = joinUrl(env.apiBaseUrl, path, params);
@@ -112,11 +96,7 @@ export async function apiRequest<T>(
 
 	const data = await parseResponseBody(response);
 	if (!response.ok) {
-		throw new ApiError(
-			toApiErrorMessage(response.status, data),
-			response.status,
-			data,
-		);
+		throw new ApiError(toApiErrorMessage(response.status, data), response.status, data);
 	}
 	return data as T;
 }

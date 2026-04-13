@@ -31,6 +31,13 @@ export interface ChatSendEvent {
 	body: string;
 }
 
+export interface ChatTypingSendEvent {
+	type: "typing";
+	is_typing: boolean;
+}
+
+export type ChatOutgoingEvent = ChatSendEvent | ChatTypingSendEvent;
+
 export interface ChatMessagePayload {
 	id: number;
 	body: string;
@@ -47,6 +54,14 @@ export type CreateMessageResponse = ChatMessagePayload;
 export interface ConversationMessagesResponse {
 	results: ChatMessagePayload[];
 	has_more: boolean;
+	next_before: number | null;
+	next_before_created_at: string | null;
+}
+
+export interface ConversationMessagesQuery {
+	limit?: number;
+	before?: number;
+	before_created_at?: string;
 }
 
 export interface ChatMessageEvent {
@@ -67,9 +82,16 @@ export interface ChatErrorEvent {
 	detail?: string;
 }
 
+export interface ChatTypingEvent {
+	type: "typing";
+	user_id: number;
+	is_typing: boolean;
+}
+
 export type ChatReceiveEvent =
 	| ChatMessageEvent
 	| ChatPresenceEvent
+	| ChatTypingEvent
 	| ChatErrorEvent;
 
 export interface ChatMessage {

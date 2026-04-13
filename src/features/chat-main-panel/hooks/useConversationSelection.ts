@@ -1,4 +1,6 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useConversations } from "@/features/sidebar/hooks/useConversations";
 import type { Conversation } from "@/features/sidebar/types";
 
 export interface ConversationSelectionState {
@@ -8,12 +10,29 @@ export interface ConversationSelectionState {
 
 /** Tracks the currently selected conversation and selection handler. */
 export function useConversationSelection(): ConversationSelectionState {
-	const [selectedConversation, setSelectedConversation] =
-		useState<Conversation | null>(null);
+	const navigate = useNavigate();
+	const { chatId } = useParams<{ chatId?: string }>();
+	const { data: conversations = [] } = useConversations();
 
-	const handleSelectConversation = useCallback((conversation: Conversation) => {
-		setSelectedConversation(conversation);
-	}, []);
+	const selectedConversation = useMemo(() => {
+		if (!chatId) {
+			return null;
+		}
+
+		const selectedConversationId = Number(chatId);
+		if (!Number.isInteger(selectedConversationId) || selectedConversationId <= 0) {
+			return null;
+		}
+
+		return conversations.find((conversation) => conversation.id === selectedConversationId) ?? null;
+	}, [chatId, conversations]);
+
+	const handleSelectConversation = useCallback(
+		(conversation: Conversation) => {
+			navigate(`/chat/${conversation.id}`);
+		},
+		[navigate],
+	);
 
 	return { selectedConversation, handleSelectConversation };
 }

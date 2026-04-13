@@ -1,7 +1,5 @@
 const FALLBACK_API_BASE_URL = "http://localhost:8000";
 
 export const env = {
-	apiBaseUrl:
-		(import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() ||
-		FALLBACK_API_BASE_URL,
+	apiBaseUrl: (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() || FALLBACK_API_BASE_URL,
 };
