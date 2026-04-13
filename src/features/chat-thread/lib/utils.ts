@@ -1,4 +1,4 @@
-import type { ChatMessage, ChatMessagePayload } from "../chat/types";
+import type { ChatMessage, ChatMessagePayload } from "../../chat/types";
 
 export const SKELETON_MESSAGE_ROWS = [0, 1, 2, 3, 4] as const;
 

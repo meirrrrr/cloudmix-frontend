@@ -1,38 +1,22 @@
 import { useState, type ChangeEvent } from "react";
 
-import type { PresenceState } from "@/features/chat/types";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { useCreateConversation, useSearch } from "../hooks/useSearch";
 
 const DEBOUNCE_DELAY = 1000;
 
-interface UserSearchProps {
-	presenceByUserId?: Record<number, PresenceState>;
-}
-
-function formatLastSeen(value: string | null): string {
-	if (!value) {
-		return "Offline";
-	}
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) {
-		return "Offline";
-	}
-	return `Last seen ${date.toLocaleString()}`;
-}
-
-export function UserSearch({ presenceByUserId = {} }: UserSearchProps) {
+export function UserSearch() {
 	const [query, setQuery] = useState("");
-
 	const debouncedQuery = useDebouncedValue(query, DEBOUNCE_DELAY);
 	const normalizedQuery = query.trim();
 	const normalizedDebouncedQuery = debouncedQuery.trim();
 	const isDebouncing = normalizedQuery !== normalizedDebouncedQuery;
-	const { data: searchUsers = [], isFetching } = useSearch(debouncedQuery);
+
+	const { data: searchUsers = [], isFetching } = useSearch(normalizedDebouncedQuery);
 	const isSearching = isDebouncing || isFetching;
 	const { mutate: createConversationMutation, isPending: isCreatingConversation } = useCreateConversation();
 
-	const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
+	const handleQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
 		setQuery(event.target.value);
 	};
 
@@ -64,14 +48,14 @@ export function UserSearch({ presenceByUserId = {} }: UserSearchProps) {
 				<input
 					id="user-search-input"
 					value={query}
-					onChange={handleSearch}
+					onChange={handleQueryChange}
 					placeholder="Search users by name"
 					className="w-full border-none bg-transparent text-sm text-[#2e334f] placeholder:text-[#9ca1bb] outline-none"
 					autoComplete="off"
 				/>
 			</div>
 
-			{normalizedQuery ? (
+			{normalizedQuery.length > 0 && (
 				<div className="rounded-xl border border-[#e9ebf4] bg-white">
 					{isSearching ? (
 						<p className="px-3 py-2 text-sm text-[#8f94af]">Searching...</p>
@@ -103,7 +87,7 @@ export function UserSearch({ presenceByUserId = {} }: UserSearchProps) {
 						<p className="px-3 py-2 text-sm text-[#8f94af]">No users found.</p>
 					)}
 				</div>
-			) : null}
+			)}
 		</div>
 	);
 }

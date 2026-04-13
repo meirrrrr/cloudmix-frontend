@@ -6,11 +6,12 @@ export function Header() {
 	const navigate = useNavigate();
 	const { data: user } = useMeQuery();
 	const logoutMutation = useLogoutMutation();
-	const userLabel = user?.display_name || user?.username || "User Name";
+
+	const userLabel = user?.display_name || user?.username || "User";
 
 	async function handleLogout() {
 		await logoutMutation.mutateAsync();
-		navigate("/login");
+		navigate("/login", { replace: true });
 	}
 
 	return (

@@ -1,19 +1,12 @@
-interface ConversationThreadHeaderProps {
+interface ChatHeaderProps {
 	contactName: string;
 	presenceLabel: string;
 	onBackToList?: () => void;
 }
 
-/**
- * Displays the selected contact and current presence text.
- */
-export function ConversationThreadHeader({
-	contactName,
-	presenceLabel,
-	onBackToList,
-}: ConversationThreadHeaderProps) {
+export function ChatHeader({ contactName, presenceLabel, onBackToList }: ChatHeaderProps) {
 	return (
-		<div className="shrink-0 h-[90px] border-b border-[#e5e7ee] bg-[#fbfbfd] px-4 py-4 md:px-8">
+		<div className="shrink-0 h-[90px] border-l border-b border-[#e5e7ee] bg-[#fbfbfd] px-4 py-4 md:px-8">
 			<div className="flex items-center gap-2 md:hidden">
 				{onBackToList ? (
 					<button

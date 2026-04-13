@@ -6,9 +6,9 @@ import type { Conversation } from "@/features/sidebar/types";
 export interface ConversationSelectionState {
 	selectedConversation: Conversation | null;
 	handleSelectConversation: (conversation: Conversation) => void;
+	chatId: string | null;
 }
 
-/** Tracks the currently selected conversation and selection handler. */
 export function useConversationSelection(): ConversationSelectionState {
 	const navigate = useNavigate();
 	const { chatId } = useParams<{ chatId?: string }>();
@@ -34,5 +34,5 @@ export function useConversationSelection(): ConversationSelectionState {
 		[navigate],
 	);
 
-	return { selectedConversation, handleSelectConversation };
+	return { selectedConversation, handleSelectConversation, chatId };
 }

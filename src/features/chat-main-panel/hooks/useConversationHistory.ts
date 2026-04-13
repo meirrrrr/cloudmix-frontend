@@ -145,18 +145,22 @@ export function useConversationHistory({
 				setIsHistoryLoading(false);
 			});
 
-		if (selectedConversationUnreadCount > 0) {
-			void markConversationReadOnce(conversationId)
-				.then(onConversationRead)
-				.catch(() => {
-					// Ignore read marker errors because chat should stay usable.
-				});
-		}
-
 		return () => {
 			isCancelled = true;
 		};
-	}, [loadInitialHistory, onConversationRead, selectedConversationId, selectedConversationUnreadCount]);
+	}, [loadInitialHistory, selectedConversationId]);
+
+	useEffect(() => {
+		if (!selectedConversationId || selectedConversationUnreadCount <= 0) {
+			return;
+		}
+
+		void markConversationReadOnce(selectedConversationId)
+			.then(onConversationRead)
+			.catch(() => {
+				// Ignore read marker errors because chat should stay usable.
+			});
+	}, [onConversationRead, selectedConversationId, selectedConversationUnreadCount]);
 
 	return {
 		historyMessages,

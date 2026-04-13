@@ -37,7 +37,7 @@ export function MessageComposer({
 	}
 
 	return (
-		<div className="border-t border-[#cfd3da] bg-[#FFFFFF] px-6 py-3 h-[64px] flex items-center justify-between">
+		<div className="border-t border-l border-[#e7e9f0] bg-[#FFFFFF] px-6 py-3 h-[64px] flex items-center justify-between">
 			<form onSubmit={handleSubmit} className="flex flex-1 items-center gap-3">
 				<input
 					type="text"

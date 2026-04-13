@@ -22,7 +22,6 @@ interface UseMessageComposerOptions {
 	selectedConversation: Conversation | null;
 	currentUser: PresenceUser | null;
 	onMessageCreated: () => Promise<unknown>;
-	refreshHistory: (conversationId: number) => Promise<void>;
 }
 
 /** Manages draft input, optimistic sends, and error handling for the composer. */
@@ -30,7 +29,6 @@ export function useMessageComposer({
 	selectedConversation,
 	currentUser,
 	onMessageCreated,
-	refreshHistory,
 }: UseMessageComposerOptions): MessageComposerState {
 	const [savedMessages, setSavedMessages] = useState<ChatMessagePayload[]>([]);
 	const [draftMessage, setDraftMessage] = useState("");
@@ -80,9 +78,6 @@ export function useMessageComposer({
 				return mergeMessages(withoutOptimistic, [createdMessage]);
 			});
 			void onMessageCreated();
-			void refreshHistory(conversationId).catch(() => {
-				// Keep optimistic/server-created local state if refresh fails.
-			});
 		} catch (error) {
 			setSavedMessages((currentMessages) =>
 				currentMessages.filter((message) => message.id !== optimisticMessageId),
@@ -92,7 +87,7 @@ export function useMessageComposer({
 		} finally {
 			setIsSending(false);
 		}
-	}, [currentUser, draftMessage, isSending, onMessageCreated, refreshHistory, selectedConversation]);
+	}, [currentUser, draftMessage, isSending, onMessageCreated, selectedConversation]);
 
 	return {
 		savedMessages,

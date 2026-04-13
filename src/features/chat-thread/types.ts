@@ -1,11 +1,12 @@
-import type { ChatMessagePayload } from "../chat/types";
+import type { ChatMessagePayload, PresenceState, PresenceUser } from "../chat/types";
+import type { Conversation } from "../sidebar/types";
 
 export interface ConversationThreadProps {
-	contactName?: string;
-	peerIsOnline?: boolean;
+	hasChatInRoute?: boolean;
+	selectedConversation?: Conversation;
+	peerData?: PresenceUser;
+	presenceByUserId?: Record<number, PresenceState>;
 	peerIsTyping?: boolean;
-	peerLastSeenAt?: string | null;
-	hasActiveConversation?: boolean;
 	onBackToList?: () => void;
 	messages?: ChatMessagePayload[];
 	currentUserId?: number;

@@ -3,7 +3,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMeQuery } from "@/features/auth/hooks/use-auth-query";
 import { useChatWebSocket } from "@/features/chat/hooks/use-chat-websocket";
-import type { PresenceState } from "@/features/chat/types";
 import { CONVERSATIONS_QUERY_KEY } from "@/features/sidebar/hooks/useConversations";
 import { Sidebar } from "@/features/sidebar/components/Sidebar";
 import { ConversationThread } from "@/features/chat-thread";
@@ -59,19 +58,6 @@ export function ChatMainPanel() {
 		() => mergeMessages(historyMessages, savedMessages, realtimeMessages),
 		[historyMessages, realtimeMessages, savedMessages],
 	);
-
-	const peerPresence = useMemo(() => {
-		if (!selectedConversation) {
-			return null;
-		}
-
-		const fallbackPresence: PresenceState = {
-			is_online: selectedConversation.peer.is_online,
-			last_seen_at: selectedConversation.peer.last_seen_at,
-		};
-
-		return presenceByUserId[selectedConversation.peer.id] ?? fallbackPresence;
-	}, [presenceByUserId, selectedConversation]);
 
 	const chatError = historyError ?? websocketError;
 
@@ -152,9 +138,9 @@ export function ChatMainPanel() {
 		<div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
 			<div className={hasChatInRoute ? "hidden md:block" : "block"}>
 				<Sidebar
+					hasChatInRoute={hasChatInRoute}
 					selectedConversationId={selectedConversation?.id ?? null}
 					onSelectConversation={handleSelectConversation}
-					presenceByUserId={presenceByUserId}
 				/>
 			</div>
 			<div
@@ -163,7 +149,10 @@ export function ChatMainPanel() {
 				}
 			>
 				<ConversationThread
-					hasActiveConversation={Boolean(selectedConversation)}
+					hasChatInRoute={hasChatInRoute}
+					selectedConversation={selectedConversation ?? undefined}
+					presenceByUserId={presenceByUserId}
+					peerIsTyping={peerIsTyping}
 					onBackToList={
 						hasChatInRoute
 							? () => {
@@ -171,10 +160,6 @@ export function ChatMainPanel() {
 								}
 							: undefined
 					}
-					contactName={selectedConversation?.peer.display_name}
-					peerIsOnline={peerPresence?.is_online}
-					peerIsTyping={peerIsTyping}
-					peerLastSeenAt={peerPresence?.last_seen_at ?? null}
 					messages={selectedConversation ? threadMessages : undefined}
 					currentUserId={me?.id}
 					socketError={chatError}

@@ -2,6 +2,7 @@ export type Conversation = {
 	id: number;
 	updated_at: string;
 	unread_count: number;
+	is_ai_assistant: boolean;
 	last_message: {
 		id: number;
 		body: string;

@@ -30,13 +30,10 @@ export function getConversationMessages(
 	if (query.before !== undefined) params.before = String(query.before);
 	if (query.before_created_at) params.before_created_at = query.before_created_at;
 
-	return apiRequest<ConversationMessagesResponse>(
-		`${CHAT_BASE_PATH}/conversations/${conversationId}/messages/`,
-		{
-			method: "GET",
-			params,
-		},
-	);
+	return apiRequest<ConversationMessagesResponse>(`${CHAT_BASE_PATH}/conversations/${conversationId}/messages/`, {
+		method: "GET",
+		params,
+	});
 }
 
 export async function createMessage(
@@ -44,13 +41,10 @@ export async function createMessage(
 	body: CreateMessageRequest["body"],
 ): Promise<CreateMessageResponse> {
 	try {
-		return await apiRequest<CreateMessageResponse>(
-			`${CHAT_BASE_PATH}/conversations/${conversationId}/messages/`,
-			{
-				method: "POST",
-				body: { body },
-			},
-		);
+		return await apiRequest<CreateMessageResponse>(`${CHAT_BASE_PATH}/conversations/${conversationId}/messages/`, {
+			method: "POST",
+			body: { body },
+		});
 	} catch (error) {
 		if (error instanceof ApiError) {
 			throw new CreateMessageApiError(error.message, error.status, error.data);

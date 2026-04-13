@@ -1,9 +1,9 @@
-import type { ChatMessagePayload } from "../../chat/types";
-import { MessageBubble } from "../../chat/components/MessageBubble";
-import { SKELETON_MESSAGE_ROWS, toChatMessage } from "../lib/utils";
-import type { MessageVisibilityMap } from "../hooks/useConversationThreadMessageVisibility";
+import { MessageBubble } from "@/features/chat/components/MessageBubble";
+import { toChatMessage } from "@/features/chat-thread/lib/utils";
+import type { ChatMessagePayload } from "@/features/chat/types";
+import type { MessageVisibilityMap } from "@/features/chat-thread/hooks/useConversationThreadMessageVisibility";
 
-interface ConversationThreadMessagesProps {
+interface ChatMessagesProps {
 	messages: ChatMessagePayload[];
 	currentUserId?: number;
 	visibleMessageIds: MessageVisibilityMap;
@@ -14,10 +14,7 @@ interface ConversationThreadMessagesProps {
 	onLoadOlderHistory?: () => Promise<void> | void;
 }
 
-/**
- * Renders loading, empty, and populated message states for a conversation thread.
- */
-export function ConversationThreadMessages({
+export function ChatMessages({
 	messages,
 	currentUserId,
 	visibleMessageIds,
@@ -26,7 +23,7 @@ export function ConversationThreadMessages({
 	isLoadingMoreHistory,
 	socketError,
 	onLoadOlderHistory,
-}: ConversationThreadMessagesProps) {
+}: ChatMessagesProps) {
 	const hasMessages = messages.length > 0;
 	const threadItems = buildThreadItems(messages);
 
@@ -47,11 +44,7 @@ export function ConversationThreadMessages({
 				</div>
 			) : null}
 
-			{isHistoryLoading && <DateDivider label="Today" />}
-
-			{isHistoryLoading ? (
-				<LoadingMessages />
-			) : hasMessages ? (
+			{hasMessages ? (
 				<div className="space-y-4">
 					{threadItems.map((item) =>
 						item.type === "divider" ? (
@@ -65,7 +58,7 @@ export function ConversationThreadMessages({
 						),
 					)}
 				</div>
-			) : (
+			) : isHistoryLoading ? null : (
 				<EmptyMessages />
 			)}
 
@@ -152,18 +145,6 @@ interface ThreadMessageItem {
 	message: ChatMessagePayload;
 }
 
-function LoadingMessages() {
-	return (
-		<div className="space-y-3">
-			{SKELETON_MESSAGE_ROWS.map((index) => (
-				<div key={index} className={`flex ${index % 2 === 0 ? "justify-start" : "justify-end"}`}>
-					<div className="skeleton-shimmer h-[52px] w-[min(78%,340px)] rounded-[16px] bg-[#e7e9f1]" />
-				</div>
-			))}
-		</div>
-	);
-}
-
 function EmptyMessages() {
 	return (
 		<div className="flex min-h-[320px] items-center justify-center px-4">
@@ -174,4 +155,3 @@ function EmptyMessages() {
 		</div>
 	);
 }
-

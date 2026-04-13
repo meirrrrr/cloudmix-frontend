@@ -20,11 +20,7 @@ export function useSearch(name: string): UseQueryResult<SearchUser[]> {
 	});
 }
 
-export function useCreateConversation(): UseMutationResult<
-	ConversationResponse,
-	Error,
-	number
-> {
+export function useCreateConversation(): UseMutationResult<ConversationResponse, Error, number> {
 	const queryClient = useQueryClient();
 
 	return useMutation({
