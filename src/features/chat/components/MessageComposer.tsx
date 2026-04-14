@@ -37,28 +37,30 @@ export function MessageComposer({
 	}
 
 	return (
-		<div className="border-t border-l border-[#e7e9f0] bg-[#FFFFFF] px-6 py-3 h-[64px] flex items-center justify-between">
-			<form onSubmit={handleSubmit} className="flex flex-1 items-center gap-3">
-				<input
-					type="text"
-					value={value}
-					onChange={(event) => {
-						onChange(event.target.value);
-					}}
-					placeholder="Write a message ..."
-					disabled={disabled || isSending}
-					className="w-full border-none bg-transparent text-[16px] text-[#31354f] placeholder:text-[#180A29] placeholder:opacity-50 outline-none disabled:cursor-not-allowed disabled:opacity-60"
-				/>
-				<button
-					type="submit"
-					disabled={disabled || isSending || value.trim().length === 0}
-					className="flex h-8 w-8 items-center justify-center text-[#a9adb7] transition hover:text-[#7a808d] disabled:cursor-not-allowed"
-					aria-label="Send message"
-				>
-					<SendIcon />
-				</button>
-			</form>
-			{error ? <p className="mt-1 text-sm text-[#d14343]">{error}</p> : null}
+		<div className="shrink-0">
+			<div className="border-t border-l border-[#e7e9f0] bg-[#FFFFFF] px-6 py-3 h-[64px] flex items-center justify-between">
+				<form onSubmit={handleSubmit} className="flex flex-1 items-center gap-3">
+					<input
+						type="text"
+						value={value}
+						onChange={(event) => {
+							onChange(event.target.value);
+						}}
+						placeholder="Write a message ..."
+						disabled={disabled || isSending}
+						className="w-full border-none bg-transparent text-[16px] text-[#31354f] placeholder:text-[#180A29] placeholder:opacity-50 outline-none disabled:cursor-not-allowed disabled:opacity-60"
+					/>
+					<button
+						type="submit"
+						disabled={disabled || isSending || value.trim().length === 0}
+						className="flex h-8 w-8 items-center justify-center text-[#a9adb7] transition hover:text-[#7a808d] disabled:cursor-not-allowed"
+						aria-label="Send message"
+					>
+						<SendIcon />
+					</button>
+				</form>
+				{error ? <p className="mt-1 text-sm text-[#d14343]">{error}</p> : null}
+			</div>
 		</div>
 	);
 }

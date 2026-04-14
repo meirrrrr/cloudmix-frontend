@@ -1,12 +1,13 @@
 import { useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+
 import { useConversations } from "@/features/sidebar/hooks/useConversations";
 import type { Conversation } from "@/features/sidebar/types";
 
 export interface ConversationSelectionState {
 	selectedConversation: Conversation | null;
 	handleSelectConversation: (conversation: Conversation) => void;
-	chatId: string | null;
+	hasChatInRoute: boolean;
 }
 
 export function useConversationSelection(): ConversationSelectionState {
@@ -14,8 +15,10 @@ export function useConversationSelection(): ConversationSelectionState {
 	const { chatId } = useParams<{ chatId?: string }>();
 	const { data: conversations = [] } = useConversations();
 
+	const hasChatInRoute = Boolean(chatId);
+
 	const selectedConversation = useMemo(() => {
-		if (!chatId) {
+		if (!hasChatInRoute) {
 			return null;
 		}
 
@@ -25,7 +28,7 @@ export function useConversationSelection(): ConversationSelectionState {
 		}
 
 		return conversations.find((conversation) => conversation.id === selectedConversationId) ?? null;
-	}, [chatId, conversations]);
+	}, [chatId, conversations, hasChatInRoute]);
 
 	const handleSelectConversation = useCallback(
 		(conversation: Conversation) => {
@@ -34,5 +37,5 @@ export function useConversationSelection(): ConversationSelectionState {
 		[navigate],
 	);
 
-	return { selectedConversation, handleSelectConversation, chatId };
+	return { selectedConversation, handleSelectConversation, hasChatInRoute };
 }

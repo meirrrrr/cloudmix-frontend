@@ -1,50 +1,69 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createMessage } from "@/features/chat/api/messages";
-import type { ChatMessagePayload, PresenceUser } from "@/features/chat/types";
 import type { Conversation } from "@/features/sidebar/types";
-import {
-	CHAT_MESSAGE_MAX_LENGTH,
-	createOptimisticMessage,
-	mergeMessages,
-	toComposerErrorMessage,
-} from "../lib/chat-main-panel-utils";
+import { CHAT_MESSAGE_MAX_LENGTH, toComposerErrorMessage } from "../lib/chat-main-panel-utils";
+
+export type ComposerSendPhase = "idle" | "sending" | "sent" | "failed";
+
+export interface ComposerSendStatus {
+	phase: ComposerSendPhase;
+	messageId: number | null;
+}
 
 export interface MessageComposerState {
-	savedMessages: ChatMessagePayload[];
 	draftMessage: string;
 	composerError: string | null;
 	isSending: boolean;
+	sendStatus: ComposerSendStatus;
 	handleComposerChange: (value: string) => void;
 	handleComposerSubmit: () => Promise<void>;
 }
 
 interface UseMessageComposerOptions {
 	selectedConversation: Conversation | null;
-	currentUser: PresenceUser | null;
 	onMessageCreated: () => Promise<unknown>;
 }
 
-/** Manages draft input, optimistic sends, and error handling for the composer. */
+const SENT_STATUS_TIMEOUT_MS = 1800;
+
+/** Manages draft input, send lifecycle, and error handling for the composer. */
 export function useMessageComposer({
 	selectedConversation,
-	currentUser,
 	onMessageCreated,
 }: UseMessageComposerOptions): MessageComposerState {
-	const [savedMessages, setSavedMessages] = useState<ChatMessagePayload[]>([]);
 	const [draftMessage, setDraftMessage] = useState("");
 	const [composerError, setComposerError] = useState<string | null>(null);
 	const [isSending, setIsSending] = useState(false);
+	const [sendStatus, setSendStatus] = useState<ComposerSendStatus>({ phase: "idle", messageId: null });
+	const sentStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	const clearSentStatusTimeout = useCallback(() => {
+		if (sentStatusTimeoutRef.current) {
+			clearTimeout(sentStatusTimeoutRef.current);
+			sentStatusTimeoutRef.current = null;
+		}
+	}, []);
 
 	useEffect(() => {
-		setSavedMessages([]);
+		clearSentStatusTimeout();
 		setDraftMessage("");
 		setComposerError(null);
 		setIsSending(false);
-	}, [selectedConversation?.id]);
+		setSendStatus({ phase: "idle", messageId: null });
+	}, [clearSentStatusTimeout, selectedConversation?.id]);
+
+	useEffect(() => {
+		return () => {
+			clearSentStatusTimeout();
+		};
+	}, [clearSentStatusTimeout]);
 
 	const handleComposerChange = useCallback((value: string) => {
 		setDraftMessage(value);
 		setComposerError((currentError) => (currentError ? null : currentError));
+		setSendStatus((currentStatus) =>
+			currentStatus.phase === "failed" ? { phase: "idle", messageId: null } : currentStatus,
+		);
 	}, []);
 
 	const handleComposerSubmit = useCallback(async () => {
@@ -64,36 +83,34 @@ export function useMessageComposer({
 
 		setComposerError(null);
 		setIsSending(true);
+		setSendStatus({ phase: "sending", messageId: null });
+		clearSentStatusTimeout();
 
 		const conversationId = selectedConversation.id;
-		const optimisticMessageId = -Date.now();
-		const optimisticMessage = createOptimisticMessage(optimisticMessageId, trimmedBody, currentUser);
-		setSavedMessages((currentMessages) => mergeMessages(currentMessages, [optimisticMessage]));
 		setDraftMessage("");
 
 		try {
 			const createdMessage = await createMessage(conversationId, trimmedBody);
-			setSavedMessages((currentMessages) => {
-				const withoutOptimistic = currentMessages.filter((message) => message.id !== optimisticMessageId);
-				return mergeMessages(withoutOptimistic, [createdMessage]);
-			});
+			setSendStatus({ phase: "sent", messageId: createdMessage.id });
+			sentStatusTimeoutRef.current = setTimeout(() => {
+				setSendStatus({ phase: "idle", messageId: null });
+				sentStatusTimeoutRef.current = null;
+			}, SENT_STATUS_TIMEOUT_MS);
 			void onMessageCreated();
 		} catch (error) {
-			setSavedMessages((currentMessages) =>
-				currentMessages.filter((message) => message.id !== optimisticMessageId),
-			);
 			setDraftMessage(trimmedBody);
 			setComposerError(toComposerErrorMessage(error));
+			setSendStatus({ phase: "failed", messageId: null });
 		} finally {
 			setIsSending(false);
 		}
-	}, [currentUser, draftMessage, isSending, onMessageCreated, selectedConversation]);
+	}, [clearSentStatusTimeout, draftMessage, isSending, onMessageCreated, selectedConversation]);
 
 	return {
-		savedMessages,
 		draftMessage,
 		composerError,
 		isSending,
+		sendStatus,
 		handleComposerChange,
 		handleComposerSubmit,
 	};

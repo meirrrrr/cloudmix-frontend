@@ -38,9 +38,10 @@ export function useConversationThreadAutoScroll({
 			return;
 		}
 
+		const scrollBehavior: ScrollBehavior = hasInitialLoad ? "auto" : "smooth";
 		listNode.scrollTo({
 			top: listNode.scrollHeight,
-			behavior: "smooth",
+			behavior: scrollBehavior,
 		});
 	}, [isHistoryLoading, isPrependingHistory, messagesCount]);
 

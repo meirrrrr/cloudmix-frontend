@@ -4,7 +4,6 @@ import { ApiError } from "@/shared/lib/api-client";
 
 import {
 	CHAT_MESSAGE_MAX_LENGTH,
-	createOptimisticMessage,
 	mergeMessages,
 	sortMessages,
 	toComposerErrorMessage,
@@ -65,14 +64,6 @@ describe("chat-main-panel-utils", () => {
 		expect(toComposerErrorMessage(new Error("random"))).toBe(
 			"Unable to send message right now. Please try again.",
 		);
-	});
-
-	it("createOptimisticMessage uses fallback sender when current user missing", () => {
-		const optimistic = createOptimisticMessage(123, "hello", null);
-		expect(optimistic.id).toBe(123);
-		expect(optimistic.body).toBe("hello");
-		expect(optimistic.sender.id).toBe(-1);
-		expect(optimistic.sender.display_name).toBe("You");
 	});
 
 	it("exposes the expected message max length", () => {

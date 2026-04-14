@@ -18,6 +18,8 @@ export function useMeQuery(): UseQueryResult<AuthUser> {
 		queryKey: AUTH_QUERY_KEYS.me,
 		queryFn: getMe,
 		retry: false,
+		staleTime: 5 * 60 * 1000,
+		refetchOnWindowFocus: false,
 	});
 }
 

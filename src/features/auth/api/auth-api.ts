@@ -1,11 +1,6 @@
 import { apiRequest } from "@/shared/lib/api-client";
 
-import type {
-	ApiDetailResponse,
-	AuthUser,
-	LoginRequest,
-	RegisterRequest,
-} from "@/features/auth/types";
+import type { ApiDetailResponse, AuthUser, LoginRequest, RegisterRequest } from "@/features/auth/types";
 
 const AUTH_BASE_PATH = "/api/accounts/auth";
 const USERS_BASE_PATH = "/api/accounts/users";

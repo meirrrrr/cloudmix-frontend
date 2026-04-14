@@ -2,6 +2,8 @@ import { useMemo } from "react";
 import { UserSearch } from "@/features/search/components/UserSearch";
 import type { Conversation } from "../types";
 import { useConversations } from "../hooks/useConversations";
+import { formatLastMessageTime, showMessage } from "../lib/utils";
+import { SidebarLoader } from "./SidebarLoader";
 
 interface SidebarProps {
 	hasChatInRoute: boolean;
@@ -20,47 +22,31 @@ export function Sidebar({ hasChatInRoute, selectedConversationId, onSelectConver
 		return [...pinnedAiConversations, ...regularConversations];
 	}, [conversations]);
 
-	const formatLastMessageTime = (time: string): string => {
-		if (!time) return "";
-		const date = new Date(time);
-		return date.toLocaleTimeString([], {
-			hour: "2-digit",
-			minute: "2-digit",
-			hour12: false,
-		});
-	};
-
-	const showMessage = (message: string): string => {
-		if (message.length > 50) {
-			return message.slice(0, 50) + "...";
-		}
-		return message;
-	};
+	const messagesCount = sortedConversations.length;
 
 	return (
 		<div className={hasChatInRoute ? "hidden md:block" : "block"}>
-			<aside className="w-full bg-[#fdfdff] w-[100%] md:w-[510px]">
-				<div className="border-b border-[#eceef4] px-6 py-5">
-					<h2 className="flex items-baseline gap-1 text-[24px] font-semibold leading-none tracking-tight text-[#232840]">
-						<span>Messages ({sortedConversations.length})</span>
-					</h2>
-					<UserSearch />
-				</div>
+			<div className={hasChatInRoute ? "hidden md:block" : "block"}>
+				<aside className="w-full bg-[#fdfdff] w-[100%] md:w-[510px]">
+					<div className="border-b border-[#eceef4] px-6 py-5">
+						<h2 className="flex items-baseline gap-1 text-[24px] font-semibold leading-none tracking-tight text-[#232840]">
+							<span>Messages ({messagesCount})</span>
+						</h2>
+						<UserSearch />
+					</div>
 
-				{isLoading ? (
-					<div className="px-6 py-8">
-						<p className="text-sm font-medium text-[#4a4f68]">Loading...</p>
-						<p className="mt-1 text-sm text-[#8d92ac]">Searching for conversations...</p>
-					</div>
-				) : sortedConversations.length === 0 ? (
-					<div className="px-6 py-8">
-						<p className="text-sm font-medium text-[#4a4f68]">No conversations yet</p>
-						<p className="mt-1 text-sm text-[#8d92ac]">Search for a user to start chatting.</p>
-					</div>
-				) : (
-					<ul>
-						{sortedConversations.map((conversation) => {
-							return (
+					{isLoading && <SidebarLoader />}
+
+					{!isLoading && messagesCount === 0 && (
+						<div className="px-6 py-8">
+							<p className="text-sm font-medium text-[#4a4f68]">No conversations yet</p>
+							<p className="mt-1 text-sm text-[#8d92ac]">Search for a user to start chatting.</p>
+						</div>
+					)}
+
+					{!isLoading && messagesCount > 0 && (
+						<ul>
+							{sortedConversations.map((conversation) => (
 								<li key={conversation.id} className="border-b border-[#eceef4]">
 									<button
 										type="button"
@@ -96,11 +82,11 @@ export function Sidebar({ hasChatInRoute, selectedConversationId, onSelectConver
 										</div>
 									</button>
 								</li>
-							);
-						})}
-					</ul>
-				)}
-			</aside>
+							))}
+						</ul>
+					)}
+				</aside>
+			</div>
 		</div>
 	);
 }

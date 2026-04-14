@@ -1,5 +1,5 @@
 import { CreateMessageApiError } from "@/features/chat/api/messages";
-import type { ChatMessagePayload, PresenceUser } from "@/features/chat/types";
+import type { ChatMessagePayload } from "@/features/chat/types";
 import { ApiError } from "@/shared/lib/api-client";
 
 export const CHAT_MESSAGE_MAX_LENGTH = 5000;
@@ -49,22 +49,3 @@ export function toComposerErrorMessage(error: unknown): string {
 	return "Unable to send message right now. Please try again.";
 }
 
-/** Builds a temporary optimistic message while create API is pending. */
-export function createOptimisticMessage(
-	messageId: number,
-	body: string,
-	currentUser: PresenceUser | null,
-): ChatMessagePayload {
-	return {
-		id: messageId,
-		body,
-		created_at: new Date().toISOString(),
-		sender: currentUser ?? {
-			id: -1,
-			username: "you",
-			display_name: "You",
-			is_online: true,
-			last_seen_at: null,
-		},
-	};
-}

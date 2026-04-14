@@ -1,4 +1,5 @@
 import type { ChatMessagePayload, PresenceState, PresenceUser } from "../chat/types";
+import type { ComposerSendStatus } from "../chat-main-panel/hooks/useMessageComposer";
 import type { Conversation } from "../sidebar/types";
 
 export interface ConversationThreadProps {
@@ -7,9 +8,7 @@ export interface ConversationThreadProps {
 	peerData?: PresenceUser;
 	presenceByUserId?: Record<number, PresenceState>;
 	peerIsTyping?: boolean;
-	onBackToList?: () => void;
 	messages?: ChatMessagePayload[];
-	currentUserId?: number;
 	socketError?: string | null;
 	composerValue: string;
 	composerError?: string | null;
@@ -18,6 +17,7 @@ export interface ConversationThreadProps {
 	hasMoreHistory?: boolean;
 	isLoadingMoreHistory?: boolean;
 	isPrependingHistory?: boolean;
+	sendStatus?: ComposerSendStatus;
 	onComposerChange: (value: string) => void;
 	onComposerSubmit: () => void;
 	onLoadOlderHistory?: () => Promise<void> | void;
