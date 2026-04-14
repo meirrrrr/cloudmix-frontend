@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { getConversationMessages } from "@/features/chat/api/messages";
+import { getConversationMessages } from "@/features/chat-messages/api/messages-api";
 import type { ChatMessagePayload, ConversationMessagesResponse } from "@/features/chat/types";
-import { markConversationRead } from "@/features/sidebar/api/conversations";
+import { markConversationRead } from "@/features/sidebar/api/conversations-api";
 import type { Conversation } from "@/features/sidebar/types";
 import { ApiError } from "@/shared/lib/api-client";
 import { mergeMessages, sortMessages } from "../lib/chat-main-panel-utils";
@@ -53,7 +53,6 @@ interface UseConversationHistoryOptions {
 	onConversationRead: () => Promise<unknown>;
 }
 
-/** Loads, refreshes, and tracks message history for the selected conversation. */
 export function useConversationHistory({
 	selectedConversation,
 	onConversationRead,
@@ -66,6 +65,7 @@ export function useConversationHistory({
 	const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 	const [hasMoreHistory, setHasMoreHistory] = useState(false);
 	const [isLoadingMoreHistory, setIsLoadingMoreHistory] = useState(false);
+	const [nextBeforeId, setNextBeforeId] = useState<number | null>(null);
 	const [nextBeforeCreatedAt, setNextBeforeCreatedAt] = useState<string | null>(null);
 	const [isPrependingHistory, setIsPrependingHistory] = useState(false);
 
@@ -74,6 +74,7 @@ export function useConversationHistory({
 		const response = await loadConversationHistory(conversationId);
 		setHistoryMessages(sortMessages(response.results));
 		setHasMoreHistory(response.has_more);
+		setNextBeforeId(response.next_before);
 		setNextBeforeCreatedAt(response.next_before_created_at);
 	}, []);
 
@@ -85,7 +86,12 @@ export function useConversationHistory({
 	);
 
 	const loadOlderHistory = useCallback(async () => {
-		if (!selectedConversationId || !hasMoreHistory || !nextBeforeCreatedAt || isLoadingMoreHistory) {
+		if (
+			!selectedConversationId ||
+			!hasMoreHistory ||
+			(!nextBeforeId && !nextBeforeCreatedAt) ||
+			isLoadingMoreHistory
+		) {
 			return;
 		}
 
@@ -95,18 +101,22 @@ export function useConversationHistory({
 		try {
 			const response = await getConversationMessages(selectedConversationId, {
 				limit: INITIAL_HISTORY_LIMIT,
-				before_created_at: nextBeforeCreatedAt,
+				...(nextBeforeId !== null && { before: nextBeforeId }),
+				...(nextBeforeCreatedAt !== null && { before_created_at: nextBeforeCreatedAt }),
 			});
 			setHistoryMessages((current) => mergeMessages(response.results, current));
 			setHasMoreHistory(response.has_more);
+			setNextBeforeId(response.next_before);
 			setNextBeforeCreatedAt(response.next_before_created_at);
 		} catch {
 			setHistoryError("Unable to load older messages.");
 		} finally {
 			setIsLoadingMoreHistory(false);
-			setIsPrependingHistory(false);
+			// Defer so the prepended messages render first with isPrependingHistory=true,
+			// preventing the auto-scroll from jumping to the bottom.
+			requestAnimationFrame(() => setIsPrependingHistory(false));
 		}
-	}, [hasMoreHistory, isLoadingMoreHistory, nextBeforeCreatedAt, selectedConversationId]);
+	}, [hasMoreHistory, isLoadingMoreHistory, nextBeforeCreatedAt, nextBeforeId, selectedConversationId]);
 
 	useEffect(() => {
 		if (!selectedConversationId) {
@@ -115,6 +125,7 @@ export function useConversationHistory({
 			setIsHistoryLoading(false);
 			setHasMoreHistory(false);
 			setIsLoadingMoreHistory(false);
+			setNextBeforeId(null);
 			setNextBeforeCreatedAt(null);
 			setIsPrependingHistory(false);
 			return;

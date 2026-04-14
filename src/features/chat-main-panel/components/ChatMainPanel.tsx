@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { useChatWebSocket } from "@/features/chat/hooks/use-chat-websocket";
+import { useChatWebSocket } from "@/features/chat-main-panel/hooks/use-chat-websocket";
 import { CONVERSATIONS_QUERY_KEY } from "@/features/sidebar/hooks/useConversations";
 import { Sidebar } from "@/features/sidebar/components/Sidebar";
 import { ConversationThread } from "@/features/chat-thread";
@@ -16,6 +16,7 @@ export function ChatMainPanel() {
 	// navigation and context
 	const queryClient = useQueryClient();
 	const { selectedConversation, handleSelectConversation, hasChatInRoute } = useConversationSelection();
+	const conversationId = selectedConversation?.id ?? null;
 
 	// realtime data
 	const {
@@ -25,16 +26,15 @@ export function ChatMainPanel() {
 		sendTyping,
 		lastError: websocketError,
 	} = useChatWebSocket({
-		conversationId: selectedConversation?.id ?? null,
+		conversationId,
 	});
-	console.log("realtimeMessages", realtimeMessages);
 
 	// query invalidation
 	const invalidateConversations = useCallback(() => {
 		return queryClient.invalidateQueries({ queryKey: CONVERSATIONS_QUERY_KEY });
 	}, [queryClient]);
 
-	// conversation history
+	// messages history
 	const {
 		historyMessages,
 		historyError,
@@ -57,16 +57,18 @@ export function ChatMainPanel() {
 
 	// typing indicator
 	const { stopTyping, handleTypingChange } = useTyping({
-		selectedConversationId: selectedConversation?.id ?? null,
+		selectedConversationId: conversationId,
 		sendTyping,
 		onComposerChange: handleComposerChange,
 	});
 
+	const peerIsTyping = Boolean(conversationId && typingByUserId[selectedConversation?.peer.id ?? 0]);
+
 	// derived values
 	const threadMessages = useMemo(() => {
-		if (!selectedConversation) return undefined;
+		if (!conversationId) return undefined;
 		return mergeMessages(historyMessages, realtimeMessages);
-	}, [selectedConversation, historyMessages, realtimeMessages]);
+	}, [conversationId, historyMessages, realtimeMessages]);
 
 	const chatError = historyError ?? websocketError;
 
@@ -83,13 +85,11 @@ export function ChatMainPanel() {
 		stopTyping();
 	}, [handleComposerSubmit, stopTyping]);
 
-	const peerIsTyping = Boolean(selectedConversation && typingByUserId[selectedConversation.peer.id]);
-
 	return (
 		<div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
 			<Sidebar
 				hasChatInRoute={hasChatInRoute}
-				selectedConversationId={selectedConversation?.id ?? null}
+				selectedConversationId={conversationId}
 				onSelectConversation={handleSelectConversation}
 			/>
 
@@ -99,7 +99,7 @@ export function ChatMainPanel() {
 				presenceByUserId={presenceByUserId}
 				peerIsTyping={peerIsTyping}
 				messages={threadMessages}
-				socketError={chatError}
+				chatError={chatError}
 				composerValue={draftMessage}
 				composerError={composerError}
 				isSending={isSending}

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-export default function LandingPage() {
+export default function WelcomePage() {
 	return (
 		<div className="relative min-h-screen overflow-hidden bg-[#f6f7ff] px-6 py-10">
 			<div className="pointer-events-none absolute left-1/2 top-0 h-80 w-80 -translate-x-1/2 rounded-full bg-[#8e5cf8]/20 blur-3xl" />
@@ -13,16 +13,12 @@ export default function LandingPage() {
 						Welcome to CloudMix Chat
 					</h1>
 					<p className="mt-4 max-w-2xl text-base text-[#5d6281] md:text-lg">
-						A simple, beautiful space where teams and friends connect in real
-						time, share ideas, and keep every conversation in one place.
+						A simple, beautiful space where teams and friends connect in real time, share ideas, and keep
+						every conversation in one place.
 					</p>
 					<div className="mt-8 flex flex-wrap gap-3">
-						<span className="rounded-xl bg-[#f2f4ff] px-3 py-2 text-sm text-[#39407a]">
-							Fast messaging
-						</span>
-						<span className="rounded-xl bg-[#f2f4ff] px-3 py-2 text-sm text-[#39407a]">
-							Secure access
-						</span>
+						<span className="rounded-xl bg-[#f2f4ff] px-3 py-2 text-sm text-[#39407a]">Fast messaging</span>
+						<span className="rounded-xl bg-[#f2f4ff] px-3 py-2 text-sm text-[#39407a]">Secure access</span>
 						<span className="rounded-xl bg-[#f2f4ff] px-3 py-2 text-sm text-[#39407a]">
 							Clean interface
 						</span>

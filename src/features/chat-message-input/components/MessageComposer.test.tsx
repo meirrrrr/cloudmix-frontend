@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import { MessageComposer } from "./MessageComposer";
+import { MessageComposer } from "../../chat-message-input/components/MessageComposer";
 
 describe("MessageComposer", () => {
 	it("calls onChange when typing into composer", async () => {

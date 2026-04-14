@@ -1,5 +1,5 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
-import { getConversations } from "../api/conversations";
+import { getConversations } from "../api/conversations-api";
 import type { Conversation } from "../types";
 
 export const CONVERSATIONS_QUERY_KEY = ["conversations"] as const;

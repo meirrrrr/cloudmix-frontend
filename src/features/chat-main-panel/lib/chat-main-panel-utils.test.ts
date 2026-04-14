@@ -1,13 +1,8 @@
-import { CreateMessageApiError } from "@/features/chat/api/messages";
+import { CreateMessageApiError } from "@/features/chat-messages/api/messages-api";
 import type { ChatMessagePayload, PresenceUser } from "@/features/chat/types";
 import { ApiError } from "@/shared/lib/api-client";
 
-import {
-	CHAT_MESSAGE_MAX_LENGTH,
-	mergeMessages,
-	sortMessages,
-	toComposerErrorMessage,
-} from "./chat-main-panel-utils";
+import { CHAT_MESSAGE_MAX_LENGTH, mergeMessages, sortMessages, toComposerErrorMessage } from "./chat-main-panel-utils";
 
 const sender: PresenceUser = {
 	id: 5,
@@ -40,10 +35,7 @@ describe("chat-main-panel-utils", () => {
 
 	it("mergeMessages de-duplicates by id and keeps sorted order", () => {
 		const older = [buildMessage(1, "2026-04-13T10:00:00Z", "older body")];
-		const newer = [
-			buildMessage(1, "2026-04-13T10:00:00Z", "newer body"),
-			buildMessage(2, "2026-04-13T11:00:00Z"),
-		];
+		const newer = [buildMessage(1, "2026-04-13T10:00:00Z", "newer body"), buildMessage(2, "2026-04-13T11:00:00Z")];
 
 		const merged = mergeMessages(older, newer);
 		expect(merged).toHaveLength(2);
@@ -61,9 +53,7 @@ describe("chat-main-panel-utils", () => {
 		const apiError = new ApiError("Oops from API", 500, {});
 		expect(toComposerErrorMessage(apiError)).toBe("Oops from API");
 
-		expect(toComposerErrorMessage(new Error("random"))).toBe(
-			"Unable to send message right now. Please try again.",
-		);
+		expect(toComposerErrorMessage(new Error("random"))).toBe("Unable to send message right now. Please try again.");
 	});
 
 	it("exposes the expected message max length", () => {

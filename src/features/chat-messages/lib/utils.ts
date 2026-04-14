@@ -57,3 +57,16 @@ function formatDayLabel(date: Date): string {
 		year: "numeric",
 	});
 }
+
+export function formatMessageTimestamp(value: string): string {
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) {
+		return "";
+	}
+
+	return date.toLocaleString([], {
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: false,
+	});
+}

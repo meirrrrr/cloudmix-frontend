@@ -1,21 +1,24 @@
 import { useEffect, useRef } from "react";
 
 interface UseConversationThreadAutoScrollParams {
+	conversationId: number | string | undefined;
 	messagesCount: number;
 	isHistoryLoading: boolean;
 	isPrependingHistory: boolean;
 }
 
-/**
- * Scrolls the thread container to the latest message after updates.
- */
 export function useConversationThreadAutoScroll({
+	conversationId,
 	messagesCount,
 	isHistoryLoading,
 	isPrependingHistory,
 }: UseConversationThreadAutoScrollParams) {
 	const messageListRef = useRef<HTMLDivElement | null>(null);
 	const previousMessagesCountRef = useRef(0);
+
+	useEffect(() => {
+		previousMessagesCountRef.current = 0;
+	}, [conversationId]);
 
 	useEffect(() => {
 		if (isHistoryLoading) {
@@ -38,10 +41,9 @@ export function useConversationThreadAutoScroll({
 			return;
 		}
 
-		const scrollBehavior: ScrollBehavior = hasInitialLoad ? "auto" : "smooth";
 		listNode.scrollTo({
 			top: listNode.scrollHeight,
-			behavior: scrollBehavior,
+			behavior: "smooth",
 		});
 	}, [isHistoryLoading, isPrependingHistory, messagesCount]);
 

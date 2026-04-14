@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createMessage } from "@/features/chat/api/messages";
+import { createMessage } from "@/features/chat-messages/api/messages-api";
 import type { Conversation } from "@/features/sidebar/types";
 import { CHAT_MESSAGE_MAX_LENGTH, toComposerErrorMessage } from "../lib/chat-main-panel-utils";
 

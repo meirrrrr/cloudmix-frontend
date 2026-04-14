@@ -1,11 +1,11 @@
-import { MessageBubble } from "@/features/chat/components/MessageBubble";
 import { toChatMessage } from "@/features/chat-thread/lib/utils";
 import type { ComposerSendStatus } from "@/features/chat-main-panel/hooks/useMessageComposer";
-import type { ChatMessagePayload } from "@/features/chat/types";
 
+import type { ChatMessagePayload } from "../types";
 import { buildThreadItems } from "../lib/utils";
 import { DateDivider } from "./DateDivider";
 import { EmptyMessages } from "./EmptyMessages";
+import { MessageBubble } from "./MessageBubble";
 
 interface ChatMessagesProps {
 	messages: ChatMessagePayload[];
@@ -14,7 +14,7 @@ interface ChatMessagesProps {
 	isHistoryLoading: boolean;
 	hasMoreHistory: boolean;
 	isLoadingMoreHistory: boolean;
-	socketError: string | null;
+	chatError: string | null;
 	onLoadOlderHistory?: () => Promise<void> | void;
 }
 
@@ -25,7 +25,7 @@ export function ChatMessages({
 	isHistoryLoading,
 	hasMoreHistory,
 	isLoadingMoreHistory,
-	socketError,
+	chatError,
 	onLoadOlderHistory,
 }: ChatMessagesProps) {
 	const hasMessages = messages.length > 0;
@@ -80,7 +80,7 @@ export function ChatMessages({
 				<EmptyMessages />
 			)}
 
-			{socketError ? <p className="text-sm text-[#d14343]">Chat error: {socketError}</p> : null}
+			{chatError ? <p className="text-sm text-[#d14343]">Chat error: {chatError}</p> : null}
 			{showStatus ? (
 				<p className={`text-right text-xs font-medium transition-opacity duration-200 ${sendStatusClassName}`}>
 					{sendStatusText}

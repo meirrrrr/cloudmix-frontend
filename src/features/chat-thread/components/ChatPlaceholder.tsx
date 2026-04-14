@@ -1,7 +1,4 @@
-/**
- * Shows the empty state when no chat is selected.
- */
-export function ConversationThreadPlaceholder() {
+export function ChatPlaceholder() {
 	return (
 		<section className="flex min-w-0 flex-1 items-center justify-center bg-[#f7f7fa] px-6">
 			<div className="text-center">

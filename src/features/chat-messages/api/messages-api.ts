@@ -19,8 +19,6 @@ export class CreateMessageApiError extends Error {
 	}
 }
 
-const CHAT_BASE_PATH = "/api/chat";
-
 export function getConversationMessages(
 	conversationId: number,
 	query: ConversationMessagesQuery = {},
@@ -30,7 +28,7 @@ export function getConversationMessages(
 	if (query.before !== undefined) params.before = String(query.before);
 	if (query.before_created_at) params.before_created_at = query.before_created_at;
 
-	return apiRequest<ConversationMessagesResponse>(`${CHAT_BASE_PATH}/conversations/${conversationId}/messages/`, {
+	return apiRequest<ConversationMessagesResponse>(`/api/chat/conversations/${conversationId}/messages/`, {
 		method: "GET",
 		params,
 	});
@@ -41,7 +39,7 @@ export async function createMessage(
 	body: CreateMessageRequest["body"],
 ): Promise<CreateMessageResponse> {
 	try {
-		return await apiRequest<CreateMessageResponse>(`${CHAT_BASE_PATH}/conversations/${conversationId}/messages/`, {
+		return await apiRequest<CreateMessageResponse>(`/api/chat/conversations/${conversationId}/messages/`, {
 			method: "POST",
 			body: { body },
 		});

@@ -4,7 +4,7 @@ import { useMeQuery } from "@/features/auth/hooks/use-auth-query";
 import ChatPage from "@/pages/chat/ChatPage";
 import LoginPage from "@/pages/auth/LoginPage";
 import RegistrationPage from "@/pages/auth/RegistrationPage";
-import LandingPage from "@/pages/Landing";
+import WelcomePage from "@/pages/welcome/WelcomePage";
 import { ChatLoader } from "@/features/chat-thread/components/ChatLoader";
 
 export function App() {
@@ -23,7 +23,7 @@ export function App() {
 
 	return (
 		<Routes>
-			<Route path="/" element={<LandingPage />} />
+			<Route path="/" element={<WelcomePage />} />
 			<Route path="/chat" element={chatRouteElement} />
 			<Route path="/chat/:chatId" element={chatIdRouteElement} />
 			<Route path="/login" element={user ? <Navigate to="/chat" replace /> : <LoginPage />} />

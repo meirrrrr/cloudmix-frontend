@@ -1,4 +1,5 @@
 import type { ChatMessage } from "../types";
+import { formatMessageTimestamp } from "../lib/utils";
 
 interface MessageBubbleProps {
 	message: ChatMessage;
@@ -31,17 +32,4 @@ export function MessageBubble({ message, animateIn = true }: MessageBubbleProps)
 			</div>
 		</div>
 	);
-}
-
-function formatMessageTimestamp(value: string): string {
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) {
-		return "";
-	}
-
-	return date.toLocaleString([], {
-		hour: "2-digit",
-		minute: "2-digit",
-		hour12: false,
-	});
 }

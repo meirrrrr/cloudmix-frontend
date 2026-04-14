@@ -17,25 +17,6 @@ body {
 	animation: page-enter 280ms ease-out;
 }
 
-.skeleton-shimmer {
-	position: relative;
-	overflow: hidden;
-}
-
-.skeleton-shimmer::after {
-	content: "";
-	position: absolute;
-	inset: 0;
-	transform: translateX(-100%);
-	background: linear-gradient(
-		90deg,
-		rgba(255, 255, 255, 0) 0%,
-		rgba(255, 255, 255, 0.45) 50%,
-		rgba(255, 255, 255, 0) 100%
-	);
-	animation: skeleton-shimmer 1.2s infinite;
-}
-
 @keyframes page-enter {
 	0% {
 		opacity: 0;
@@ -44,12 +25,6 @@ body {
 	100% {
 		opacity: 1;
 		transform: translateY(0);
-	}
-}
-
-@keyframes skeleton-shimmer {
-	100% {
-		transform: translateX(100%);
 	}
 }
 

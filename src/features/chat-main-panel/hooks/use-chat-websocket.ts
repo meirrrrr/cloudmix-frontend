@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 
 import type {
 	ChatConnectionStatus,
@@ -6,9 +6,8 @@ import type {
 	ChatOutgoingEvent,
 	ChatMessagePayload,
 	ChatReceiveEvent,
-	ChatSendEvent,
 	PresenceState,
-} from "@/features/chat/types";
+} from "@/features/chat-messages/types";
 import { env } from "@/shared/lib/env";
 
 interface UseChatWebSocketOptions {
@@ -21,7 +20,6 @@ interface UseChatWebSocketResult {
 	realtimeMessages: ChatMessagePayload[];
 	presenceByUserId: Record<number, PresenceState>;
 	typingByUserId: Record<number, boolean>;
-	sendRealtime: (body: string) => void;
 	sendTyping: (isTyping: boolean) => void;
 	lastError: string | null;
 	closeCode: number | null;
@@ -138,6 +136,65 @@ function toChatReceiveEvent(value: unknown): ChatReceiveEvent | null {
 	return null;
 }
 
+interface ChatState {
+	status: ChatConnectionStatus;
+	realtimeMessages: ChatMessagePayload[];
+	presenceByUserId: Record<number, PresenceState>;
+	typingByUserId: Record<number, boolean>;
+	lastError: string | null;
+	closeCode: number | null;
+}
+
+type ChatAction =
+	| { type: "reset" }
+	| { type: "connect_start" }
+	| { type: "open" }
+	| { type: "socket_error"; error: string }
+	| { type: "message"; message: ChatMessagePayload }
+	| { type: "presence"; userId: number; state: PresenceState }
+	| { type: "typing"; userId: number; isTyping: boolean }
+	| { type: "chat_error"; error: string }
+	| { type: "close"; code: number }
+	| { type: "reconnecting"; code: number };
+
+const initialChatState: ChatState = {
+	status: "idle",
+	realtimeMessages: [],
+	presenceByUserId: {},
+	typingByUserId: {},
+	lastError: null,
+	closeCode: null,
+};
+
+function chatReducer(state: ChatState, action: ChatAction): ChatState {
+	switch (action.type) {
+		case "reset":
+			return initialChatState;
+		case "connect_start":
+			return { ...initialChatState, status: "connecting" };
+		case "open":
+			return { ...state, status: "open", closeCode: null, lastError: null };
+		case "socket_error":
+			return { ...state, status: "error", lastError: action.error };
+		case "message":
+			return {
+				...state,
+				realtimeMessages: [...state.realtimeMessages, action.message],
+				typingByUserId: { ...state.typingByUserId, [action.message.sender.id]: false },
+			};
+		case "presence":
+			return { ...state, presenceByUserId: { ...state.presenceByUserId, [action.userId]: action.state } };
+		case "typing":
+			return { ...state, typingByUserId: { ...state.typingByUserId, [action.userId]: action.isTyping } };
+		case "chat_error":
+			return { ...state, lastError: action.error };
+		case "close":
+			return { ...state, status: "closed", closeCode: action.code };
+		case "reconnecting":
+			return { ...state, status: "connecting", closeCode: action.code };
+	}
+}
+
 function toErrorMessage(event: ChatErrorEvent): string {
 	if (event.detail) {
 		return event.detail;
@@ -152,12 +209,7 @@ export function useChatWebSocket({ conversationId, accessToken }: UseChatWebSock
 	const socketRef = useRef<WebSocket | null>(null);
 	const hasRetriedWithTokenRef = useRef(false);
 
-	const [status, setStatus] = useState<ChatConnectionStatus>("idle");
-	const [realtimeMessages, setRealtimeMessages] = useState<ChatMessagePayload[]>([]);
-	const [presenceByUserId, setPresenceByUserId] = useState<Record<number, PresenceState>>({});
-	const [typingByUserId, setTypingByUserId] = useState<Record<number, boolean>>({});
-	const [lastError, setLastError] = useState<string | null>(null);
-	const [closeCode, setCloseCode] = useState<number | null>(null);
+	const [state, dispatch] = useReducer(chatReducer, initialChatState);
 
 	useEffect(() => {
 		if (!conversationId) {
@@ -165,12 +217,7 @@ export function useChatWebSocket({ conversationId, accessToken }: UseChatWebSock
 				socketRef.current.close();
 				socketRef.current = null;
 			}
-			setStatus("idle");
-			setRealtimeMessages([]);
-			setPresenceByUserId({});
-			setTypingByUserId({});
-			setLastError(null);
-			setCloseCode(null);
+			dispatch({ type: "reset" });
 			return;
 		}
 
@@ -178,12 +225,7 @@ export function useChatWebSocket({ conversationId, accessToken }: UseChatWebSock
 		const wsBase = toWsBaseUrl(env.apiBaseUrl);
 		const cleanToken = accessToken?.trim() || "";
 
-		setRealtimeMessages([]);
-		setPresenceByUserId({});
-		setTypingByUserId({});
-		setLastError(null);
-		setCloseCode(null);
-		setStatus("connecting");
+		dispatch({ type: "connect_start" });
 		hasRetriedWithTokenRef.current = false;
 
 		const connect = (useToken: boolean) => {
@@ -200,17 +242,14 @@ export function useChatWebSocket({ conversationId, accessToken }: UseChatWebSock
 				if (isCancelled) {
 					return;
 				}
-				setStatus("open");
-				setCloseCode(null);
-				setLastError(null);
+				dispatch({ type: "open" });
 			};
 
 			socket.onerror = () => {
 				if (isCancelled) {
 					return;
 				}
-				setStatus("error");
-				setLastError("WebSocket connection error.");
+				dispatch({ type: "socket_error", error: "WebSocket connection error." });
 			};
 
 			socket.onmessage = (rawMessage) => {
@@ -218,61 +257,51 @@ export function useChatWebSocket({ conversationId, accessToken }: UseChatWebSock
 				try {
 					parsed = JSON.parse(rawMessage.data);
 				} catch {
-					setLastError("Received invalid JSON from chat server.");
+					dispatch({ type: "chat_error", error: "Received invalid JSON from chat server." });
 					return;
 				}
 
 				const event = toChatReceiveEvent(parsed);
 				if (!event) {
-					setLastError("Received unexpected chat event shape.");
+					dispatch({ type: "chat_error", error: "Received unexpected chat event shape." });
 					return;
 				}
 
 				if (event.type === "message") {
-					setRealtimeMessages((previous) => [...previous, event.message]);
-					setTypingByUserId((previous) => ({
-						...previous,
-						[event.message.sender.id]: false,
-					}));
+					dispatch({ type: "message", message: event.message });
 					return;
 				}
 
 				if (event.type === "presence") {
-					setPresenceByUserId((previous) => ({
-						...previous,
-						[event.user_id]: {
-							is_online: event.is_online,
-							last_seen_at: event.last_seen_at,
-						},
-					}));
+					dispatch({
+						type: "presence",
+						userId: event.user_id,
+						state: { is_online: event.is_online, last_seen_at: event.last_seen_at },
+					});
 					return;
 				}
 
 				if (event.type === "typing") {
-					setTypingByUserId((previous) => ({
-						...previous,
-						[event.user_id]: event.is_typing,
-					}));
+					dispatch({ type: "typing", userId: event.user_id, isTyping: event.is_typing });
 					return;
 				}
 
-				setLastError(toErrorMessage(event));
+				dispatch({ type: "chat_error", error: toErrorMessage(event) });
 			};
 
 			socket.onclose = (event) => {
 				if (isCancelled) {
 					return;
 				}
-				setCloseCode(event.code);
 
 				if (event.code === 4401 && cleanToken && !useToken && !hasRetriedWithTokenRef.current) {
 					hasRetriedWithTokenRef.current = true;
-					setStatus("connecting");
+					dispatch({ type: "reconnecting", code: event.code });
 					connect(true);
 					return;
 				}
 
-				setStatus("closed");
+				dispatch({ type: "close", code: event.code });
 			};
 		};
 
@@ -286,25 +315,6 @@ export function useChatWebSocket({ conversationId, accessToken }: UseChatWebSock
 			}
 		};
 	}, [conversationId, accessToken]);
-
-	const sendRealtime = useCallback((body: string) => {
-		const socket = socketRef.current;
-		const text = body.trim();
-
-		if (!socket || socket.readyState !== WebSocket.OPEN) {
-			setLastError("Cannot send message while disconnected.");
-			return;
-		}
-		if (!text) {
-			return;
-		}
-
-		const payload: ChatSendEvent = {
-			type: "send",
-			body: text,
-		};
-		socket.send(JSON.stringify(payload));
-	}, []);
 
 	const sendTyping = useCallback((isTyping: boolean) => {
 		const socket = socketRef.current;
@@ -320,13 +330,12 @@ export function useChatWebSocket({ conversationId, accessToken }: UseChatWebSock
 	}, []);
 
 	return {
-		connectionStatus: status,
-		realtimeMessages,
-		presenceByUserId,
-		typingByUserId,
-		sendRealtime,
+		connectionStatus: state.status,
+		realtimeMessages: state.realtimeMessages,
+		presenceByUserId: state.presenceByUserId,
+		typingByUserId: state.typingByUserId,
 		sendTyping,
-		lastError,
-		closeCode,
+		lastError: state.lastError,
+		closeCode: state.closeCode,
 	};
 }

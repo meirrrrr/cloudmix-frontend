@@ -1,4 +1,4 @@
-import { CreateMessageApiError } from "@/features/chat/api/messages";
+import { CreateMessageApiError } from "@/features/chat-messages/api/messages-api";
 import type { ChatMessagePayload } from "@/features/chat/types";
 import { ApiError } from "@/shared/lib/api-client";
 
@@ -48,4 +48,3 @@ export function toComposerErrorMessage(error: unknown): string {
 
 	return "Unable to send message right now. Please try again.";
 }
-

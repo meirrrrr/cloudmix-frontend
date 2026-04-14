@@ -9,7 +9,7 @@ export interface ConversationThreadProps {
 	presenceByUserId?: Record<number, PresenceState>;
 	peerIsTyping?: boolean;
 	messages?: ChatMessagePayload[];
-	socketError?: string | null;
+	chatError?: string | null;
 	composerValue: string;
 	composerError?: string | null;
 	isSending?: boolean;
