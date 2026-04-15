@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useLogoutMutation, useMeQuery } from "@/features/auth/hooks/use-auth-query";
+import { useLogoutMutation, useMeQuery } from "@/features/auth/api/useAuthQuery";
 import logo from "@/assets/logo.png";
 
 export function Header() {

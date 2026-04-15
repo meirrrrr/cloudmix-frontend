@@ -5,7 +5,7 @@ import type {
 	ConversationMessagesResponse,
 	CreateMessageRequest,
 	CreateMessageResponse,
-} from "@/features/chat/types";
+} from "../types";
 
 export class CreateMessageApiError extends Error {
 	public readonly status: number;

@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent } from "react";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
-import { useCreateConversation, useSearch } from "../hooks/useSearch";
+import { useCreateConversationMutation, useSearchQuery } from "../api/useSearchQuery";
 
 const DEBOUNCE_DELAY = 1000;
 
@@ -11,9 +11,9 @@ export function UserSearch() {
 	const normalizedDebouncedQuery = debouncedQuery.trim();
 	const isDebouncing = normalizedQuery !== normalizedDebouncedQuery;
 
-	const { data: searchUsers = [], isFetching } = useSearch(normalizedDebouncedQuery);
+	const { data: searchUsers = [], isFetching } = useSearchQuery(normalizedDebouncedQuery);
+	const { mutate: createConversationMutation, isPending: isCreatingConversation } = useCreateConversationMutation();
 	const isSearching = isDebouncing || isFetching;
-	const { mutate: createConversationMutation, isPending: isCreatingConversation } = useCreateConversation();
 
 	const handleQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
 		setQuery(event.target.value);

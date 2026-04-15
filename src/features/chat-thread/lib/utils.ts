@@ -1,11 +1,9 @@
+import { formatTimeHHMM } from "@/shared/lib/utils";
 import type { ChatMessagePayload } from "../../chat-messages/types";
 import type { ChatMessage } from "../../chat-messages/types";
 
 export const SKELETON_MESSAGE_ROWS = [0, 1, 2, 3, 4] as const;
 
-/**
- * Returns a readable presence label from online and last-seen values.
- */
 export function getPresenceLabel(peerIsOnline: boolean, peerLastSeenAt: string | null): string {
 	if (peerIsOnline) {
 		return "Online";
@@ -14,9 +12,6 @@ export function getPresenceLabel(peerIsOnline: boolean, peerLastSeenAt: string |
 	return formatLastSeen(peerLastSeenAt);
 }
 
-/**
- * Converts an API message payload into the `MessageBubble` shape.
- */
 export function toChatMessage(message: ChatMessagePayload, currentUserId?: number): ChatMessage {
 	const isOutgoing = message.id < 0 || message.sender.id === currentUserId;
 
@@ -45,11 +40,7 @@ function formatLastSeen(value: string | null): string {
 		date.getUTCDate() === now.getUTCDate();
 
 	if (isToday) {
-		return `last seen ${date.toLocaleTimeString([], {
-			hour: "2-digit",
-			minute: "2-digit",
-			hour12: false,
-		})}`;
+		return `last seen ${formatTimeHHMM(value)}`;
 	}
 
 	const yesterday = new Date(now);

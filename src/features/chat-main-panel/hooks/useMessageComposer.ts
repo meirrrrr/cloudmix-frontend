@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createMessage } from "@/features/chat-messages/api/messages-api";
-import type { Conversation } from "@/features/sidebar/types";
-import { CHAT_MESSAGE_MAX_LENGTH, toComposerErrorMessage } from "../lib/chat-main-panel-utils";
+import type { Conversation } from "../types";
+import { CHAT_MESSAGE_MAX_LENGTH, toComposerErrorMessage } from "../lib/utils";
 
 export type ComposerSendPhase = "idle" | "sending" | "sent" | "failed";
 
@@ -21,16 +21,11 @@ export interface MessageComposerState {
 
 interface UseMessageComposerOptions {
 	selectedConversation: Conversation | null;
-	onMessageCreated: () => Promise<unknown>;
 }
 
 const SENT_STATUS_TIMEOUT_MS = 1800;
 
-/** Manages draft input, send lifecycle, and error handling for the composer. */
-export function useMessageComposer({
-	selectedConversation,
-	onMessageCreated,
-}: UseMessageComposerOptions): MessageComposerState {
+export function useMessageComposer({ selectedConversation }: UseMessageComposerOptions): MessageComposerState {
 	const [draftMessage, setDraftMessage] = useState("");
 	const [composerError, setComposerError] = useState<string | null>(null);
 	const [isSending, setIsSending] = useState(false);
@@ -96,7 +91,6 @@ export function useMessageComposer({
 				setSendStatus({ phase: "idle", messageId: null });
 				sentStatusTimeoutRef.current = null;
 			}, SENT_STATUS_TIMEOUT_MS);
-			void onMessageCreated();
 		} catch (error) {
 			setDraftMessage(trimmedBody);
 			setComposerError(toComposerErrorMessage(error));
@@ -104,7 +98,7 @@ export function useMessageComposer({
 		} finally {
 			setIsSending(false);
 		}
-	}, [clearSentStatusTimeout, draftMessage, isSending, onMessageCreated, selectedConversation]);
+	}, [clearSentStatusTimeout, draftMessage, isSending, selectedConversation]);
 
 	return {
 		draftMessage,

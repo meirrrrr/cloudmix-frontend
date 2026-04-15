@@ -1,10 +1,9 @@
 import { CreateMessageApiError } from "@/features/chat-messages/api/messages-api";
-import type { ChatMessagePayload } from "@/features/chat/types";
+import type { ChatMessagePayload } from "@/features/chat-messages/types";
 import { ApiError } from "@/shared/lib/api-client";
 
 export const CHAT_MESSAGE_MAX_LENGTH = 5000;
 
-/** Sorts messages by timestamp, then by id for stable ordering. */
 export function sortMessages(messages: ChatMessagePayload[]): ChatMessagePayload[] {
 	return [...messages].sort((left, right) => {
 		const leftTimestamp = Date.parse(left.created_at);
@@ -22,7 +21,6 @@ export function sortMessages(messages: ChatMessagePayload[]): ChatMessagePayload
 	});
 }
 
-/** De-duplicates and sorts message groups into a single timeline. */
 export function mergeMessages(...groups: ChatMessagePayload[][]): ChatMessagePayload[] {
 	const byId = new Map<number, ChatMessagePayload>();
 	for (const group of groups) {
@@ -33,7 +31,6 @@ export function mergeMessages(...groups: ChatMessagePayload[][]): ChatMessagePay
 	return sortMessages([...byId.values()]);
 }
 
-/** Maps API and transport errors to a composer-friendly message. */
 export function toComposerErrorMessage(error: unknown): string {
 	if (error instanceof CreateMessageApiError) {
 		if (error.status === 404) {

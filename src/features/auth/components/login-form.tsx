@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { useLoginMutation } from "@/features/auth/hooks/use-auth-query";
+import { useLoginMutation } from "@/features/auth/api/useAuthQuery";
 import { ApiError } from "@/shared/lib/api-client";
+import { createFieldUpdater } from "../lib/utils";
 
 interface LoginFormState {
 	username: string;
@@ -20,6 +21,7 @@ export function LoginForm() {
 
 	const [formState, setFormState] = useState<LoginFormState>(INITIAL_FORM_STATE);
 	const [error, setError] = useState<string>("");
+	const updateField = createFieldUpdater(setFormState);
 
 	async function handleSubmit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -34,13 +36,6 @@ export function LoginForm() {
 				setError("Unable to sign in right now. Please try again.");
 			}
 		}
-	}
-
-	function updateField<K extends keyof LoginFormState>(key: K, value: LoginFormState[K]) {
-		setFormState((current) => ({
-			...current,
-			[key]: value,
-		}));
 	}
 
 	return (

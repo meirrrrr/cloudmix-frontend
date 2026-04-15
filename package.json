@@ -10,6 +10,7 @@
 		"lint:staged": "lint-staged",
 		"preview": "vite preview",
 		"test": "vitest run",
+		"test:e2e": "playwright test",
 		"prepare": "husky"
 	},
 	"dependencies": {

@@ -6,8 +6,8 @@ import {
 	type UseQueryResult,
 } from "@tanstack/react-query";
 
-import { getMe, login, logout, register } from "@/features/auth/api/auth-api";
-import type { AuthUser, LoginRequest, RegisterRequest } from "@/features/auth/types";
+import type { AuthUser, LoginRequest, RegisterRequest } from "../types";
+import { getMe, login, logout, register } from "./auth-api";
 
 const AUTH_QUERY_KEYS = {
 	me: ["auth", "me"] as const,

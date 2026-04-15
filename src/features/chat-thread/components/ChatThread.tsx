@@ -1,40 +1,42 @@
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useMeQuery } from "@/features/auth/hooks/use-auth-query";
+import { useMeQuery } from "@/features/auth/api/useAuthQuery";
 import { ChatHeader } from "@/features/chat-header";
 import { ChatMessages } from "@/features/chat-messages";
-import { MessageComposer } from "@/features/chat-message-input/components/MessageComposer";
+import { MessageComposer } from "@/features/chat-message-input";
+import { useConversationContext } from "@/features/chat-main-panel/context/ConversationContext";
+import { useMessageComposerContext } from "@/features/chat-main-panel/context/MessageComposerContext";
+import { useTypingContext } from "@/features/chat-main-panel/context/TypingContext";
 import type { PresenceState } from "@/features/chat-messages/types";
 
 import { useConversationThreadAutoScroll } from "../hooks/useConversationThreadAutoScroll";
 import { getPresenceLabel } from "../lib/utils";
-import type { ConversationThreadProps } from "../types";
 import { ChatPlaceholder } from "./ChatPlaceholder";
-import { ChatLoader } from "./ChatLoader";
+import { ChatLoader } from "../../../shared/components/ChatLoader";
 
-export function ConversationThread({
-	hasChatInRoute,
-	selectedConversation,
-	presenceByUserId,
-	peerIsTyping,
-	messages = [],
-	chatError,
-	composerValue,
-	composerError = null,
-	isSending = false,
-	isHistoryLoading = false,
-	hasMoreHistory = false,
-	isLoadingMoreHistory = false,
-	isPrependingHistory = false,
-	sendStatus = { phase: "idle", messageId: null },
-	onComposerChange,
-	onComposerSubmit,
-	onLoadOlderHistory,
-}: ConversationThreadProps) {
+export function ConversationThread() {
 	const navigate = useNavigate();
 	const { data: me } = useMeQuery();
-	// chat state
+
+	const {
+		selectedConversation,
+		hasChatInRoute,
+		presenceByUserId,
+		peerIsTyping,
+		messages,
+		chatError,
+		isHistoryLoading,
+		hasMoreHistory,
+		isLoadingMoreHistory,
+		isPrependingHistory,
+		loadOlderHistory,
+		invalidateConversations,
+	} = useConversationContext();
+
+	const { composerValue, composerError, isSending, sendStatus } = useMessageComposerContext();
+	const { handleComposerChange, handleComposerSubmit } = useTypingContext();
+
 	const hasActiveConversation = Boolean(selectedConversation);
 	const peerData = selectedConversation?.peer ?? null;
 	const contactName = peerData?.display_name ?? "";
@@ -47,19 +49,17 @@ export function ConversationThread({
 		? "flex min-h-0 min-w-0 flex-1"
 		: "hidden md:flex md:min-h-0 md:min-w-0 md:flex-1";
 
-	// peer
+	// derived state
 	const peerPresence: PresenceState | null = peerData
 		? (presenceByUserId[peerData.id] ?? {
 				is_online: peerData.is_online ?? false,
 				last_seen_at: peerData.last_seen_at,
 			})
 		: null;
-
 	const peerIsOnline = peerPresence?.is_online ?? false;
 	const peerLastSeenAt = peerPresence?.last_seen_at ?? null;
 	const presenceLabel = getPresenceLabel(peerIsOnline, peerLastSeenAt);
 
-	// messages
 	const messageListRef = useConversationThreadAutoScroll({
 		conversationId: selectedConversation?.id,
 		messagesCount: messages.length,
@@ -67,10 +67,10 @@ export function ConversationThread({
 		isPrependingHistory,
 	});
 
-	// handlers
 	const handleBackToList = useCallback(() => {
 		navigate("/chat");
-	}, [navigate]);
+		void invalidateConversations();
+	}, [navigate, invalidateConversations]);
 
 	if (isResolvingConversation || showInitialHistoryLoader) {
 		return <ChatLoader />;
@@ -103,14 +103,14 @@ export function ConversationThread({
 						hasMoreHistory={hasMoreHistory}
 						isLoadingMoreHistory={isLoadingMoreHistory}
 						chatError={chatError}
-						onLoadOlderHistory={onLoadOlderHistory}
+						onLoadOlderHistory={loadOlderHistory}
 					/>
 				</div>
 
 				<MessageComposer
 					value={composerValue}
-					onChange={onComposerChange}
-					onSend={onComposerSubmit}
+					onChange={handleComposerChange}
+					onSend={handleComposerSubmit}
 					disabled={!hasActiveConversation}
 					isSending={isSending}
 					error={composerError}

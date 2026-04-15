@@ -1,184 +1,120 @@
-import { useCallback, useEffect, useState } from "react";
-import { getConversationMessages } from "@/features/chat-messages/api/messages-api";
-import type { ChatMessagePayload, ConversationMessagesResponse } from "@/features/chat/types";
-import { markConversationRead } from "@/features/sidebar/api/conversations-api";
-import type { Conversation } from "@/features/sidebar/types";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
+import type { ChatMessagePayload } from "@/features/chat-messages/types";
+import { markConversationRead } from "@/features/chat-main-panel/api/conversations-api";
 import { ApiError } from "@/shared/lib/api-client";
-import { mergeMessages, sortMessages } from "../lib/chat-main-panel-utils";
-
-const INITIAL_HISTORY_LIMIT = 30;
-
-const historyRequestByConversation = new Map<number, Promise<ConversationMessagesResponse>>();
-const markReadRequestByConversation = new Map<number, Promise<void>>();
-
-function loadConversationHistory(conversationId: number): Promise<ConversationMessagesResponse> {
-	const existingRequest = historyRequestByConversation.get(conversationId);
-	if (existingRequest) {
-		return existingRequest;
-	}
-
-	const request = getConversationMessages(conversationId, { limit: INITIAL_HISTORY_LIMIT }).finally(() => {
-		historyRequestByConversation.delete(conversationId);
-	});
-	historyRequestByConversation.set(conversationId, request);
-	return request;
-}
-
-function markConversationReadOnce(conversationId: number): Promise<void> {
-	const existingRequest = markReadRequestByConversation.get(conversationId);
-	if (existingRequest) {
-		return existingRequest;
-	}
-
-	const request = markConversationRead(conversationId).finally(() => {
-		markReadRequestByConversation.delete(conversationId);
-	});
-	markReadRequestByConversation.set(conversationId, request);
-	return request;
-}
-
-export interface ConversationHistoryState {
-	historyMessages: ChatMessagePayload[];
-	historyError: string | null;
-	isHistoryLoading: boolean;
-	hasMoreHistory: boolean;
-	isLoadingMoreHistory: boolean;
-	isPrependingHistory: boolean;
-	loadOlderHistory: () => Promise<void>;
-	refreshHistory: (conversationId: number) => Promise<void>;
-}
-
-interface UseConversationHistoryOptions {
-	selectedConversation: Conversation | null;
-	onConversationRead: () => Promise<unknown>;
-}
+import { useConversationHistoryQuery } from "@/features/chat-main-panel/api/useConversationHistoryQuery";
+import {
+	CONVERSATION_HISTORY_QUERY_KEY,
+	CONVERSATION_QUERY_KEY,
+	CONVERSATIONS_QUERY_KEY,
+} from "@/shared/lib/constants";
+import type { Conversation } from "../types";
+import { mergeMessages } from "../lib/utils";
+import type { ConversationHistoryState, UseConversationHistoryOptions } from "../types";
 
 export function useConversationHistory({
 	selectedConversation,
-	onConversationRead,
 }: UseConversationHistoryOptions): ConversationHistoryState {
+	const queryClient = useQueryClient();
 	const selectedConversationId = selectedConversation?.id ?? null;
 	const selectedConversationUnreadCount = selectedConversation?.unread_count ?? 0;
-
-	const [historyMessages, setHistoryMessages] = useState<ChatMessagePayload[]>([]);
-	const [historyError, setHistoryError] = useState<string | null>(null);
-	const [isHistoryLoading, setIsHistoryLoading] = useState(false);
-	const [hasMoreHistory, setHasMoreHistory] = useState(false);
-	const [isLoadingMoreHistory, setIsLoadingMoreHistory] = useState(false);
-	const [nextBeforeId, setNextBeforeId] = useState<number | null>(null);
-	const [nextBeforeCreatedAt, setNextBeforeCreatedAt] = useState<string | null>(null);
 	const [isPrependingHistory, setIsPrependingHistory] = useState(false);
+	const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
 
-	const loadInitialHistory = useCallback(async (conversationId: number) => {
-		setHistoryError(null);
-		const response = await loadConversationHistory(conversationId);
-		setHistoryMessages(sortMessages(response.results));
-		setHasMoreHistory(response.has_more);
-		setNextBeforeId(response.next_before);
-		setNextBeforeCreatedAt(response.next_before_created_at);
-	}, []);
+	const {
+		data,
+		error: historyQueryError,
+		isLoading: isHistoryLoading,
+		hasNextPage,
+		isFetchingNextPage,
+		fetchNextPage,
+	} = useConversationHistoryQuery(selectedConversationId);
+
+	const markReadMutation = useMutation({
+		mutationFn: (conversationId: number) => markConversationRead(conversationId),
+		onSuccess: (_data, conversationId) => {
+			queryClient.setQueryData<Conversation | undefined>(
+				CONVERSATION_QUERY_KEY(conversationId),
+				(conversation) => (conversation ? { ...conversation, unread_count: 0 } : conversation),
+			);
+			queryClient.setQueryData<Conversation[] | undefined>(CONVERSATIONS_QUERY_KEY, (conversations) =>
+				conversations?.map((conversation) =>
+					conversation.id === conversationId ? { ...conversation, unread_count: 0 } : conversation,
+				),
+			);
+		},
+	});
 
 	const refreshHistory = useCallback(
 		async (conversationId: number) => {
-			await loadInitialHistory(conversationId);
+			setLoadMoreError(null);
+			await queryClient.invalidateQueries({
+				queryKey: CONVERSATION_HISTORY_QUERY_KEY(conversationId),
+			});
 		},
-		[loadInitialHistory],
+		[queryClient],
 	);
 
 	const loadOlderHistory = useCallback(async () => {
-		if (
-			!selectedConversationId ||
-			!hasMoreHistory ||
-			(!nextBeforeId && !nextBeforeCreatedAt) ||
-			isLoadingMoreHistory
-		) {
+		if (!selectedConversationId || !hasNextPage || isFetchingNextPage) {
 			return;
 		}
 
-		setIsLoadingMoreHistory(true);
 		setIsPrependingHistory(true);
-		setHistoryError(null);
+		setLoadMoreError(null);
 		try {
-			const response = await getConversationMessages(selectedConversationId, {
-				limit: INITIAL_HISTORY_LIMIT,
-				...(nextBeforeId !== null && { before: nextBeforeId }),
-				...(nextBeforeCreatedAt !== null && { before_created_at: nextBeforeCreatedAt }),
-			});
-			setHistoryMessages((current) => mergeMessages(response.results, current));
-			setHasMoreHistory(response.has_more);
-			setNextBeforeId(response.next_before);
-			setNextBeforeCreatedAt(response.next_before_created_at);
+			await fetchNextPage();
 		} catch {
-			setHistoryError("Unable to load older messages.");
+			setLoadMoreError("Unable to load older messages.");
 		} finally {
-			setIsLoadingMoreHistory(false);
-			// Defer so the prepended messages render first with isPrependingHistory=true,
-			// preventing the auto-scroll from jumping to the bottom.
 			requestAnimationFrame(() => setIsPrependingHistory(false));
 		}
-	}, [hasMoreHistory, isLoadingMoreHistory, nextBeforeCreatedAt, nextBeforeId, selectedConversationId]);
+	}, [fetchNextPage, hasNextPage, isFetchingNextPage, selectedConversationId]);
+
+	const historyMessages = useMemo(
+		() =>
+			data?.pages.reduce((messages, page) => {
+				return mergeMessages(page.results, messages);
+			}, [] as ChatMessagePayload[]) ?? [],
+		[data],
+	);
+
+	const historyError = useMemo(() => {
+		if (loadMoreError) {
+			return loadMoreError;
+		}
+		if (!historyQueryError) {
+			return null;
+		}
+		if (historyQueryError instanceof ApiError) {
+			return historyQueryError.message;
+		}
+		return "Unable to load messages.";
+	}, [historyQueryError, loadMoreError]);
 
 	useEffect(() => {
 		if (!selectedConversationId) {
-			setHistoryMessages([]);
-			setHistoryError(null);
-			setIsHistoryLoading(false);
-			setHasMoreHistory(false);
-			setIsLoadingMoreHistory(false);
-			setNextBeforeId(null);
-			setNextBeforeCreatedAt(null);
 			setIsPrependingHistory(false);
-			return;
+			setLoadMoreError(null);
 		}
-
-		let isCancelled = false;
-		setHistoryMessages([]);
-		setHistoryError(null);
-		setIsHistoryLoading(true);
-
-		const conversationId = selectedConversationId;
-
-		void loadInitialHistory(conversationId)
-			.catch((error: unknown) => {
-				if (isCancelled) {
-					return;
-				}
-				if (error instanceof ApiError) {
-					setHistoryError(error.message);
-					return;
-				}
-				setHistoryError("Unable to load messages.");
-			})
-			.finally(() => {
-				if (isCancelled) {
-					return;
-				}
-				setIsHistoryLoading(false);
-			});
-
-		return () => {
-			isCancelled = true;
-		};
-	}, [loadInitialHistory, selectedConversationId]);
+	}, [selectedConversationId]);
 
 	useEffect(() => {
-		if (!selectedConversationId || selectedConversationUnreadCount <= 0) {
+		if (!selectedConversationId || selectedConversationUnreadCount <= 0 || markReadMutation.isPending) {
 			return;
 		}
 
-		void markConversationReadOnce(selectedConversationId)
-			.then(onConversationRead)
-			.catch(() => {
-				// Ignore read marker errors because chat should stay usable.
-			});
-	}, [onConversationRead, selectedConversationId, selectedConversationUnreadCount]);
+		markReadMutation.mutate(selectedConversationId);
+	}, [markReadMutation, selectedConversationId, selectedConversationUnreadCount]);
 
 	return {
 		historyMessages,
 		historyError,
 		isHistoryLoading,
-		hasMoreHistory,
-		isLoadingMoreHistory,
+		hasMoreHistory: Boolean(hasNextPage),
+		isLoadingMoreHistory: isFetchingNextPage,
 		isPrependingHistory,
 		loadOlderHistory,
 		refreshHistory,

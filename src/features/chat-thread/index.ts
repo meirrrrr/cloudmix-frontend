@@ -1,2 +1,3 @@
 export { ConversationThread } from "./components/ChatThread";
-export type { ConversationThreadProps } from "./types";
+export * from "./types";
+export * from "./lib/utils";

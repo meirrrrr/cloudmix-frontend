@@ -1,56 +1,64 @@
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+
 import { UserSearch } from "@/features/search/components/UserSearch";
-import type { Conversation } from "../types";
-import { useConversations } from "../hooks/useConversations";
-import { formatLastMessageTime, showMessage } from "../lib/utils";
+import { useConversationContext } from "@/features/chat-main-panel/context/ConversationContext";
+import { useConversationsQuery } from "@/features/chat-main-panel/api/useConversationsQuery";
+import { formatTimeHHMM } from "@/shared/lib/utils";
+import type { Conversation } from "@/features/chat-main-panel/types";
 import { SidebarLoader } from "./SidebarLoader";
 
-interface SidebarProps {
-	hasChatInRoute: boolean;
-	selectedConversationId: number | null;
-	onSelectConversation: (conversation: Conversation) => void;
-}
+export function Sidebar() {
+	const navigate = useNavigate();
+	const { hasChatInRoute, selectedConversation, invalidateConversations } = useConversationContext();
+	const { data: conversations = [], isLoading: isConversationsLoading } = useConversationsQuery();
+	const selectedConversationId = selectedConversation?.id ?? null;
 
-export function Sidebar({ hasChatInRoute, selectedConversationId, onSelectConversation }: SidebarProps) {
-	const { data: conversations, isLoading } = useConversations();
 	const sortedConversations = useMemo(() => {
-		if (!conversations) {
-			return [];
-		}
 		const pinnedAiConversations = conversations.filter((conversation) => conversation.is_ai_assistant);
 		const regularConversations = conversations.filter((conversation) => !conversation.is_ai_assistant);
 		return [...pinnedAiConversations, ...regularConversations];
 	}, [conversations]);
 
-	const messagesCount = sortedConversations.length;
+	const handleSelectConversation = (conversation: Conversation) => {
+		navigate(`/chat/${conversation.id}`);
+		void invalidateConversations();
+	};
+
+	const showMessage = (message: string): string => {
+		if (message.length > 50) {
+			return message.slice(0, 50) + "...";
+		}
+		return message;
+	};
 
 	return (
 		<div className={hasChatInRoute ? "hidden md:block" : "block"}>
 			<div className={hasChatInRoute ? "hidden md:block" : "block"}>
-				<aside className="w-full bg-[#fdfdff] w-[100%] md:w-[510px]">
+				<aside className="w-full bg-[#fdfdff] md:w-[360px] lg:w-[420px] xl:w-[510px]">
 					<div className="border-b border-[#eceef4] px-6 py-5">
 						<h2 className="flex items-baseline gap-1 text-[24px] font-semibold leading-none tracking-tight text-[#232840]">
-							<span>Messages ({messagesCount})</span>
+							<span>Messages ({sortedConversations.length})</span>
 						</h2>
 						<UserSearch />
 					</div>
 
-					{isLoading && <SidebarLoader />}
+					{isConversationsLoading && <SidebarLoader />}
 
-					{!isLoading && messagesCount === 0 && (
+					{!isConversationsLoading && sortedConversations.length === 0 && (
 						<div className="px-6 py-8">
 							<p className="text-sm font-medium text-[#4a4f68]">No conversations yet</p>
 							<p className="mt-1 text-sm text-[#8d92ac]">Search for a user to start chatting.</p>
 						</div>
 					)}
 
-					{!isLoading && messagesCount > 0 && (
+					{!isConversationsLoading && sortedConversations.length > 0 && (
 						<ul>
 							{sortedConversations.map((conversation) => (
 								<li key={conversation.id} className="border-b border-[#eceef4]">
 									<button
 										type="button"
-										onClick={() => onSelectConversation(conversation)}
+										onClick={() => handleSelectConversation(conversation)}
 										className={`w-full px-6 py-4 h-[90px] text-left transition hover:bg-[#F2F1F4] ${
 											selectedConversationId === conversation.id ? "bg-[#F2F1F4]" : ""
 										}`}
@@ -76,7 +84,7 @@ export function Sidebar({ hasChatInRoute, selectedConversationId, onSelectConver
 													</span>
 												) : null}
 												<p className="mt-2 text-[14px] font-400 leading-tight text-[#6f738f]">
-													{formatLastMessageTime(conversation.last_message?.created_at ?? "")}
+													{formatTimeHHMM(conversation.last_message?.created_at ?? "")}
 												</p>
 											</div>
 										</div>

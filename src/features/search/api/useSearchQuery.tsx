@@ -5,11 +5,11 @@ import {
 	type UseMutationResult,
 	type UseQueryResult,
 } from "@tanstack/react-query";
-import { createConversation, searchUsers } from "../api/search-api";
+import { createConversation, searchUsers } from "@/features/search/api/search-api";
 import type { ConversationResponse, SearchUser } from "../types";
-import { CONVERSATIONS_QUERY_KEY } from "@/features/sidebar/hooks/useConversations";
+import { CONVERSATIONS_QUERY_KEY } from "@/shared/lib/constants";
 
-export function useSearch(name: string): UseQueryResult<SearchUser[]> {
+export function useSearchQuery(name: string): UseQueryResult<SearchUser[]> {
 	const normalizedName = name.trim();
 
 	return useQuery({
@@ -20,7 +20,7 @@ export function useSearch(name: string): UseQueryResult<SearchUser[]> {
 	});
 }
 
-export function useCreateConversation(): UseMutationResult<ConversationResponse, Error, number> {
+export function useCreateConversationMutation(): UseMutationResult<ConversationResponse, Error, number> {
 	const queryClient = useQueryClient();
 
 	return useMutation({

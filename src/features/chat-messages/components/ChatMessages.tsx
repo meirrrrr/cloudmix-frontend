@@ -1,3 +1,5 @@
+import { useRef } from "react";
+
 import { toChatMessage } from "@/features/chat-thread/lib/utils";
 import type { ComposerSendStatus } from "@/features/chat-main-panel/hooks/useMessageComposer";
 
@@ -29,6 +31,8 @@ export function ChatMessages({
 	onLoadOlderHistory,
 }: ChatMessagesProps) {
 	const hasMessages = messages.length > 0;
+	const bottomAnchorRef = useRef<HTMLDivElement | null>(null);
+
 	const threadItems = buildThreadItems(messages);
 	const hasSentMessage = sendStatus.messageId
 		? messages.some((message) => message.id === sendStatus.messageId)
@@ -68,13 +72,10 @@ export function ChatMessages({
 						item.type === "divider" ? (
 							<DateDivider key={item.key} label={item.label} />
 						) : (
-							<MessageBubble
-								key={item.message.id}
-								// animateIn={visibleMessageIds[item.message.id] ?? true}
-								message={toChatMessage(item.message, currentUserId)}
-							/>
+							<MessageBubble key={item.message.id} message={toChatMessage(item.message, currentUserId)} />
 						),
 					)}
+					<div ref={bottomAnchorRef} className="h-0" />
 				</div>
 			) : isHistoryLoading ? null : (
 				<EmptyMessages />

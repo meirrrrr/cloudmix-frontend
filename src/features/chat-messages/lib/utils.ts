@@ -1,5 +1,4 @@
-import type { ChatMessagePayload } from "@/features/chat/types";
-import type { ThreadDividerItem, ThreadMessageItem } from "../types";
+import type { ChatMessagePayload, ThreadDividerItem, ThreadMessageItem } from "../types";
 
 export function buildThreadItems(messages: ChatMessagePayload[]): Array<ThreadDividerItem | ThreadMessageItem> {
 	const items: Array<ThreadDividerItem | ThreadMessageItem> = [];
@@ -55,18 +54,5 @@ function formatDayLabel(date: Date): string {
 		day: "numeric",
 		month: "long",
 		year: "numeric",
-	});
-}
-
-export function formatMessageTimestamp(value: string): string {
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) {
-		return "";
-	}
-
-	return date.toLocaleString([], {
-		hour: "2-digit",
-		minute: "2-digit",
-		hour12: false,
 	});
 }

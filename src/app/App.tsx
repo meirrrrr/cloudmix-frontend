@@ -1,11 +1,11 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
-import { useMeQuery } from "@/features/auth/hooks/use-auth-query";
+import { useMeQuery } from "@/features/auth/api/useAuthQuery";
 import ChatPage from "@/pages/chat/ChatPage";
 import LoginPage from "@/pages/auth/LoginPage";
 import RegistrationPage from "@/pages/auth/RegistrationPage";
 import WelcomePage from "@/pages/welcome/WelcomePage";
-import { ChatLoader } from "@/features/chat-thread/components/ChatLoader";
+import { ChatLoader } from "@/shared/components/ChatLoader";
 
 export function App() {
 	const { data: user, isPending } = useMeQuery();
@@ -13,6 +13,7 @@ export function App() {
 	const sessionLoadingElement = <ChatLoader />;
 
 	const chatRouteElement = isPending ? sessionLoadingElement : user ? <ChatPage /> : <Navigate to="/login" replace />;
+
 	const chatIdRouteElement = isPending ? (
 		sessionLoadingElement
 	) : user ? (

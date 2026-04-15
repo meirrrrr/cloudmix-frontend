@@ -7,6 +7,12 @@ export function getConversations() {
 	});
 }
 
+export function getConversationById(conversationId: number) {
+	return apiRequest<Conversation>(`/api/chat/conversations/${conversationId}/`, {
+		method: "GET",
+	});
+}
+
 export function markConversationRead(conversationId: number): Promise<null> {
 	return apiRequest<null>(`/api/chat/conversations/${conversationId}/read/`, {
 		method: "POST",

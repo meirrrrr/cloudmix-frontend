@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { useRegisterMutation } from "@/features/auth/hooks/use-auth-query";
+import { useRegisterMutation } from "@/features/auth/api/useAuthQuery";
 import { ApiError } from "@/shared/lib/api-client";
+import { createFieldUpdater } from "../lib/utils";
 
 interface RegisterFormState {
 	display_name: string;
@@ -22,6 +23,7 @@ export function RegisterForm() {
 
 	const [formState, setFormState] = useState<RegisterFormState>(INITIAL_FORM_STATE);
 	const [error, setError] = useState("");
+	const updateField = createFieldUpdater(setFormState);
 
 	async function handleSubmit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -42,13 +44,6 @@ export function RegisterForm() {
 				setError("Unable to register right now. Please try again.");
 			}
 		}
-	}
-
-	function updateField<K extends keyof RegisterFormState>(key: K, value: RegisterFormState[K]) {
-		setFormState((current) => ({
-			...current,
-			[key]: value,
-		}));
 	}
 
 	return (
