@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { useRegisterMutation } from "@/features/auth/api/useAuthQuery";
 import { ApiError } from "@/shared/lib/api-client";
-import { createFieldUpdater } from "../lib/utils";
+import { createFieldUpdater, extractErrorMessage } from "../lib/utils";
 
 interface RegisterFormState {
 	display_name: string;
@@ -39,7 +39,7 @@ export function RegisterForm() {
 			navigate("/chat");
 		} catch (caughtError) {
 			if (caughtError instanceof ApiError) {
-				setError(caughtError.message);
+				setError(extractErrorMessage(caughtError.data) ?? caughtError.message);
 			} else {
 				setError("Unable to register right now. Please try again.");
 			}
