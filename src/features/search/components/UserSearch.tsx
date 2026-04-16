@@ -1,10 +1,12 @@
 import { useState, type ChangeEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { useCreateConversationMutation, useSearchQuery } from "../api/useSearchQuery";
 
 const DEBOUNCE_DELAY = 1000;
 
 export function UserSearch() {
+	const navigate = useNavigate();
 	const [query, setQuery] = useState("");
 	const debouncedQuery = useDebouncedValue(query, DEBOUNCE_DELAY);
 	const normalizedQuery = query.trim();
@@ -21,8 +23,9 @@ export function UserSearch() {
 
 	const handleSelectUser = (userId: number) => {
 		createConversationMutation(userId, {
-			onSuccess: () => {
+			onSuccess: (conversation) => {
 				setQuery("");
+				navigate(`/chat/${conversation.id}`);
 			},
 		});
 	};
