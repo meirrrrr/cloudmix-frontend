@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useCallback } from "react";
 
 import { toChatMessage } from "@/features/chat-thread/lib/utils";
 import type { ComposerSendStatus } from "@/features/chat-main-panel/hooks/useMessageComposer";
@@ -49,6 +49,14 @@ export function ChatMessages({
 				? "text-[#3e7a1f]"
 				: "text-[#6f738f]";
 
+	const onLoadHistory = useCallback(async () => {
+		if (!onLoadOlderHistory || isLoadingMoreHistory) {
+			return;
+		}
+
+		await onLoadOlderHistory();
+	}, [onLoadOlderHistory, isLoadingMoreHistory]);
+
 	return (
 		<div className="space-y-4">
 			{hasMoreHistory ? (
@@ -56,12 +64,19 @@ export function ChatMessages({
 					<button
 						type="button"
 						onClick={() => {
-							void onLoadOlderHistory?.();
+							void onLoadHistory();
 						}}
 						disabled={isLoadingMoreHistory || !onLoadOlderHistory}
-						className="rounded-md border px-3 py-1 text-sm"
+						className="inline-flex items-center gap-2 rounded-full border border-[#d9dbe7] bg-white/80 px-4 py-1.5 text-sm font-medium text-[#3d4159] shadow-sm transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
 					>
-						{isLoadingMoreHistory ? "Loading..." : "Load older messages"}
+						{isLoadingMoreHistory ? (
+							<>
+								<span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#9aa1be] border-t-transparent" />
+								Loading older messages...
+							</>
+						) : (
+							"Load older messages"
+						)}
 					</button>
 				</div>
 			) : null}
