@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useLogoutMutation, useMeQuery } from "@/features/auth/api/useAuthQuery";
-import logo from "@/assets/Logo.svg";
+import logo from "@/assets/logo.svg";
 
 export function Header() {
 	const navigate = useNavigate();
