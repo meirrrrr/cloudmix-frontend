@@ -2,6 +2,7 @@ import { useCallback, useEffect, useReducer, useRef } from "react";
 
 import type { ChatOutgoingEvent } from "@/features/chat-messages/types";
 import { env } from "@/shared/lib/env";
+import { getAccessToken } from "@/shared/lib/jwt-storage";
 
 import type { UseChatWebSocketOptions, UseChatWebSocketResult } from "../types";
 import { attachChatSocketListeners } from "../lib/chat-websocket/attachChatSocketListeners";
@@ -13,6 +14,8 @@ export function useChatWebSocket({ conversationId, accessToken }: UseChatWebSock
 	const hasRetriedWithTokenRef = useRef(false);
 
 	const [state, dispatch] = useReducer(chatReducer, initialChatState);
+
+	const resolvedToken = (accessToken?.trim() || getAccessToken()?.trim() || "").trim();
 
 	useEffect(() => {
 		if (!conversationId) {
@@ -26,7 +29,7 @@ export function useChatWebSocket({ conversationId, accessToken }: UseChatWebSock
 
 		let isCancelled = false;
 		const wsBase = toWsBaseUrl(env.apiBaseUrl);
-		const cleanToken = accessToken?.trim() || "";
+		const cleanToken = resolvedToken;
 
 		dispatch({ type: "connect_start" });
 		hasRetriedWithTokenRef.current = false;
@@ -52,7 +55,8 @@ export function useChatWebSocket({ conversationId, accessToken }: UseChatWebSock
 			});
 		};
 
-		connect(false);
+		// Prefer ?token= when we have a bearer (Safari often omits cross-site cookies on WS).
+		connect(cleanToken.length > 0);
 
 		return () => {
 			isCancelled = true;
@@ -61,7 +65,7 @@ export function useChatWebSocket({ conversationId, accessToken }: UseChatWebSock
 				socketRef.current = null;
 			}
 		};
-	}, [conversationId, accessToken]);
+	}, [conversationId, resolvedToken]);
 
 	const sendTyping = useCallback((isTyping: boolean) => {
 		const socket = socketRef.current;

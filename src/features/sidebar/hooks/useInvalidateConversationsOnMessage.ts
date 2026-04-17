@@ -4,6 +4,7 @@ import type { Conversation } from "@/features/chat-main-panel/types";
 import { toChatReceiveEvent } from "@/features/chat-main-panel/lib/chat-websocket/parseReceiveEvent";
 import { toWsBaseUrl } from "@/features/chat-main-panel/lib/chat-websocket/ws-url";
 import { env } from "@/shared/lib/env";
+import { getAccessToken } from "@/shared/lib/jwt-storage";
 
 interface UseInvalidateConversationsOnMessageOptions {
 	conversations: Conversation[];
@@ -14,6 +15,8 @@ export function useInvalidateConversationsOnMessage({
 	conversations,
 	refetch,
 }: UseInvalidateConversationsOnMessageOptions): void {
+	const resolvedToken = (getAccessToken()?.trim() || "").trim();
+
 	useEffect(() => {
 		const conversationIds = conversations.map((conversation) => conversation.id);
 		if (conversationIds.length === 0) {
@@ -22,8 +25,9 @@ export function useInvalidateConversationsOnMessage({
 
 		let isUnmounted = false;
 		const wsBase = toWsBaseUrl(env.apiBaseUrl);
+		const tokenQuery = resolvedToken.length > 0 ? `?token=${encodeURIComponent(resolvedToken)}` : "";
 		const sockets = conversationIds.map((id) => {
-			const socket = new WebSocket(`${wsBase}/ws/chat/${id}/`);
+			const socket = new WebSocket(`${wsBase}/ws/chat/${id}/${tokenQuery}`);
 			socket.onmessage = (rawMessage) => {
 				if (isUnmounted) {
 					return;
@@ -50,5 +54,5 @@ export function useInvalidateConversationsOnMessage({
 				socket.close();
 			}
 		};
-	}, [conversations, refetch]);
+	}, [conversations, refetch, resolvedToken]);
 }

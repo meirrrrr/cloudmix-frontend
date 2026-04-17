@@ -1,4 +1,5 @@
 import { env } from "@/shared/lib/env";
+import { clearAuthTokens, getAccessToken, getRefreshToken, setAuthTokens } from "@/shared/lib/jwt-storage";
 
 type JsonValue = Record<string, unknown> | Array<unknown> | string | number | boolean | null;
 
@@ -48,12 +49,29 @@ async function parseResponseBody(response: Response): Promise<unknown> {
 }
 
 async function refreshAccessToken(): Promise<boolean> {
+	const refresh = getRefreshToken();
+	if (!refresh) {
+		return false;
+	}
 	const refreshUrl = joinUrl(env.apiBaseUrl, "/api/accounts/auth/token/refresh/");
 	const response = await fetch(refreshUrl, {
 		method: "POST",
-		credentials: "include",
+		credentials: "omit",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ refresh }),
 	});
-	return response.ok;
+	if (!response.ok) {
+		clearAuthTokens();
+		return false;
+	}
+	const data = (await parseResponseBody(response)) as { access?: string; refresh?: string } | null;
+	if (data && typeof data.access === "string" && data.access.trim()) {
+		const nextRefresh = typeof data.refresh === "string" && data.refresh.trim() ? data.refresh : refresh;
+		setAuthTokens(data.access, nextRefresh);
+		return true;
+	}
+	clearAuthTokens();
+	return false;
 }
 
 function toApiErrorMessage(status: number, data: unknown): string {
@@ -69,28 +87,37 @@ function toApiErrorMessage(status: number, data: unknown): string {
 	return `Request failed with status ${status}.`;
 }
 
-export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
+function buildRequestInit(
+	path: string,
+	options: ApiRequestOptions,
+): { url: string; init: RequestInit } {
 	const { body, headers, params, ...rest } = options;
-
 	const url = joinUrl(env.apiBaseUrl, path, params);
-
-	const requestConfig: RequestInit = {
+	const bearer = getAccessToken();
+	const init: RequestInit = {
 		...rest,
 		headers: {
 			"Content-Type": "application/json",
+			...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
 			...headers,
 		},
-		credentials: "include",
+		credentials: "omit",
 		body: body === undefined ? undefined : JSON.stringify(body),
 	};
+	return { url, init };
+}
 
-	let response = await fetch(url, requestConfig);
+export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
+	const { url, init } = buildRequestInit(path, options);
+
+	let response = await fetch(url, init);
 
 	const isRefreshRequest = path.includes("/api/accounts/auth/token/refresh/");
 	if (response.status === 401 && !isRefreshRequest) {
 		const didRefresh = await refreshAccessToken();
 		if (didRefresh) {
-			response = await fetch(url, requestConfig);
+			const retry = buildRequestInit(path, options);
+			response = await fetch(retry.url, retry.init);
 		}
 	}
 

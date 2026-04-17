@@ -16,5 +16,7 @@ export interface RegisterRequest extends LoginRequest {
 }
 
 export interface ApiDetailResponse {
-	detail: string;
+	detail?: string;
+	access?: string;
+	refresh?: string;
 }
