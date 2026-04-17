@@ -22,6 +22,23 @@ function makeMessage(id: number, body: string, createdAt = "2026-04-15T12:00:00.
 const idleStatus = { phase: "idle" as const, messageId: null };
 
 describe("ChatMessages", () => {
+	it("renders history loader when there are no messages and history is loading", () => {
+		render(
+			<ChatMessages
+				messages={[]}
+				sendStatus={idleStatus}
+				isHistoryLoading
+				hasMoreHistory={false}
+				isLoadingMoreHistory={false}
+				chatError={null}
+			/>,
+		);
+
+		expect(screen.getByRole("status")).toBeInTheDocument();
+		expect(screen.getByText("Loading messages…")).toBeInTheDocument();
+		expect(screen.queryByText("Start your conversation")).not.toBeInTheDocument();
+	});
+
 	it("renders empty state when there are no messages and history is not loading", () => {
 		render(
 			<ChatMessages

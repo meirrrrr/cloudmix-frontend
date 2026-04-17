@@ -46,8 +46,6 @@ export function ConversationThread({
 	const hasChatInRoute = Boolean(selectedConversation?.id);
 
 	const isResolvingConversation = hasChatInRoute && !hasActiveConversation;
-	const showInitialHistoryLoader = hasActiveConversation && isHistoryLoading && messages.length === 0;
-
 	const messageListRef = useConversationThreadAutoScroll({
 		conversationId: selectedConversation?.id ?? 0,
 		messagesCount: messages.length,
@@ -55,7 +53,7 @@ export function ConversationThread({
 		isPrependingHistory,
 	});
 
-	if (isResolvingConversation || showInitialHistoryLoader) return <ChatLoader />;
+	if (isResolvingConversation) return <ChatLoader />;
 
 	if (!hasActiveConversation) return <ChatPlaceholder />;
 

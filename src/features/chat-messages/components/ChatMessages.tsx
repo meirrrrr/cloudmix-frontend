@@ -6,6 +6,7 @@ import type { ChatMessagePayload } from "../types";
 import { buildThreadItems, getSendStatusDisplay } from "../lib/utils";
 import { DateDivider } from "./DateDivider";
 import { EmptyMessages } from "./EmptyMessages";
+import { MessagesHistoryLoader } from "./MessagesHistoryLoader";
 import { MessageBubble } from "./MessageBubble";
 
 interface ChatMessagesProps {
@@ -72,7 +73,9 @@ export function ChatMessages({
 					)}
 					<div ref={bottomAnchorRef} className="h-0" />
 				</div>
-			) : isHistoryLoading ? null : (
+			) : isHistoryLoading ? (
+				<MessagesHistoryLoader />
+			) : (
 				<EmptyMessages />
 			)}
 

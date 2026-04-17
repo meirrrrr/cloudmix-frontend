@@ -87,10 +87,7 @@ function toApiErrorMessage(status: number, data: unknown): string {
 	return `Request failed with status ${status}.`;
 }
 
-function buildRequestInit(
-	path: string,
-	options: ApiRequestOptions,
-): { url: string; init: RequestInit } {
+function buildRequestInit(path: string, options: ApiRequestOptions): { url: string; init: RequestInit } {
 	const { body, headers, params, ...rest } = options;
 	const url = joinUrl(env.apiBaseUrl, path, params);
 	const bearer = getAccessToken();
