@@ -22,7 +22,7 @@ export function Sidebar({ selectedConversation }: SidebarProps) {
 
 					{isConversationsLoading && <SidebarLoader />}
 
-					{conversations.length === 0 && <SidebarEmptyState />}
+					{!isConversationsLoading && conversations.length === 0 && <SidebarEmptyState />}
 
 					{conversations.length > 0 && (
 						<ul>

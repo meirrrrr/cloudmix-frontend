@@ -23,7 +23,7 @@ export function useConversationHistory({
 
 	const {
 		data,
-		isLoading: isHistoryLoading,
+		isPending: isHistoryPending,
 		error: historyQueryError,
 		hasNextPage,
 		isFetchingNextPage,
@@ -97,7 +97,7 @@ export function useConversationHistory({
 	return {
 		historyMessages,
 		historyError,
-		isHistoryLoading,
+		isHistoryLoading: isHistoryPending,
 		hasMoreHistory: Boolean(hasNextPage),
 		isLoadingMoreHistory: isFetchingNextPage,
 		isPrependingHistory,

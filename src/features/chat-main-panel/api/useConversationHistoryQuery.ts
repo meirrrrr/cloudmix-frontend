@@ -3,7 +3,11 @@ import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-q
 import { markConversationRead } from "@/features/chat-main-panel/api/conversations-api";
 import type { Conversation } from "@/features/chat-main-panel/types";
 import { getConversationMessages } from "@/features/chat-messages/api/messages-api";
-import { CONVERSATION_HISTORY_QUERY_KEY, CONVERSATION_QUERY_KEY, CONVERSATIONS_QUERY_KEY } from "@/shared/lib/constants";
+import {
+	CONVERSATION_HISTORY_QUERY_KEY,
+	CONVERSATION_QUERY_KEY,
+	CONVERSATIONS_QUERY_KEY,
+} from "@/shared/lib/constants";
 
 export const INITIAL_HISTORY_LIMIT = 30;
 
@@ -42,7 +46,6 @@ export function useConversationHistoryQuery(conversationId: number | null) {
 		retry: false,
 	});
 }
-
 export function useMarkConversationReadMutation() {
 	const queryClient = useQueryClient();
 

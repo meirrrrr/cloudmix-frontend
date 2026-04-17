@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import { useMeQuery } from "@/features/auth/api/useAuthQuery";
 import { ChatHeader } from "@/features/chat-header";
 import { ChatMessages } from "@/features/chat-messages";
@@ -11,8 +12,12 @@ import { ChatLoader } from "@/shared/components/ChatLoader";
 import { useConversationThreadAutoScroll } from "../hooks/useConversationThreadAutoScroll";
 import { getPresenceLabel } from "../lib/utils";
 import { ChatPlaceholder } from "./ChatPlaceholder";
+import { ChatError } from "./ChatError";
 
 interface ConversationThreadProps {
+	hasChatInRoute: boolean;
+	isRouteConversationPending: boolean;
+	isRouteConversationError: boolean;
 	selectedConversation: Conversation | null;
 	presenceByUserId: Record<number, PresenceState>;
 	peerIsTyping: boolean;
@@ -27,6 +32,9 @@ interface ConversationThreadProps {
 }
 
 export function ConversationThread({
+	hasChatInRoute,
+	isRouteConversationPending,
+	isRouteConversationError,
 	selectedConversation,
 	presenceByUserId,
 	peerIsTyping,
@@ -43,9 +51,8 @@ export function ConversationThread({
 	const { data: me } = useMeQuery();
 	const peerData = selectedConversation?.peer ?? null;
 	const hasActiveConversation = Boolean(selectedConversation);
-	const hasChatInRoute = Boolean(selectedConversation?.id);
 
-	const isResolvingConversation = hasChatInRoute && !hasActiveConversation;
+	const isResolvingConversation = hasChatInRoute && !hasActiveConversation && isRouteConversationPending;
 	const messageListRef = useConversationThreadAutoScroll({
 		conversationId: selectedConversation?.id ?? 0,
 		messagesCount: messages.length,
@@ -54,6 +61,10 @@ export function ConversationThread({
 	});
 
 	if (isResolvingConversation) return <ChatLoader />;
+
+	if (hasChatInRoute && !hasActiveConversation && isRouteConversationError) {
+		return <ChatError errorMessage="Unable to open this conversation." />;
+	}
 
 	if (!hasActiveConversation) return <ChatPlaceholder />;
 

@@ -10,7 +10,15 @@ import { mergeMessages } from "../lib/utils";
 
 export function ChatMainPanel() {
 	const { chatId } = useParams<{ chatId?: string }>();
-	const { data: conversationData } = useConversationQuery(Number(chatId));
+	const routeConversationId = Number(chatId);
+	const hasChatInRoute =
+		Boolean(chatId) && Number.isFinite(routeConversationId) && routeConversationId > 0;
+
+	const {
+		data: conversationData,
+		isPending: isRouteConversationPending,
+		isError: isRouteConversationError,
+	} = useConversationQuery(hasChatInRoute ? routeConversationId : 0);
 	const selectedConversation = conversationData ?? null;
 
 	const {
@@ -42,6 +50,9 @@ export function ChatMainPanel() {
 		<div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
 			<Sidebar selectedConversation={selectedConversation} />
 			<ConversationThread
+				hasChatInRoute={hasChatInRoute}
+				isRouteConversationPending={isRouteConversationPending}
+				isRouteConversationError={isRouteConversationError}
 				selectedConversation={selectedConversation}
 				presenceByUserId={presenceByUserId}
 				peerIsTyping={peerIsTyping}
