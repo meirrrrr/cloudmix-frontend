@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
 interface UseConversationThreadAutoScrollParams {
-	conversationId: number | string | undefined;
+	conversationId: number;
 	messagesCount: number;
 	isHistoryLoading: boolean;
 	isPrependingHistory: boolean;

@@ -1,98 +1,85 @@
-import { useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-
+import { useState } from "react";
 import { useMeQuery } from "@/features/auth/api/useAuthQuery";
 import { ChatHeader } from "@/features/chat-header";
 import { ChatMessages } from "@/features/chat-messages";
 import { MessageComposer } from "@/features/chat-message-input";
-import { useConversationContext } from "@/features/chat-main-panel/context/ConversationContext";
-import { useMessageComposerContext } from "@/features/chat-main-panel/context/MessageComposerContext";
-import { useTypingContext } from "@/features/chat-main-panel/context/TypingContext";
-import type { PresenceState } from "@/features/chat-messages/types";
+import type { ChatMessagePayload, PresenceState } from "@/features/chat-messages/types";
+import type { ComposerSendStatus } from "@/features/chat-main-panel/hooks/useMessageComposer";
+import type { Conversation } from "@/features/chat-main-panel/types";
+import { ChatLoader } from "@/shared/components/ChatLoader";
 
 import { useConversationThreadAutoScroll } from "../hooks/useConversationThreadAutoScroll";
 import { getPresenceLabel } from "../lib/utils";
 import { ChatPlaceholder } from "./ChatPlaceholder";
-import { ChatLoader } from "../../../shared/components/ChatLoader";
 
-export function ConversationThread() {
-	const navigate = useNavigate();
+interface ConversationThreadProps {
+	selectedConversation: Conversation | null;
+	presenceByUserId: Record<number, PresenceState>;
+	peerIsTyping: boolean;
+	sendTyping: (isTyping: boolean) => void;
+	messages: ChatMessagePayload[];
+	chatError: string | null;
+	isHistoryLoading: boolean;
+	hasMoreHistory: boolean;
+	isLoadingMoreHistory: boolean;
+	isPrependingHistory: boolean;
+	loadOlderHistory: () => Promise<void> | void;
+}
+
+export function ConversationThread({
+	selectedConversation,
+	presenceByUserId,
+	peerIsTyping,
+	sendTyping,
+	messages,
+	chatError,
+	isHistoryLoading,
+	hasMoreHistory,
+	isLoadingMoreHistory,
+	isPrependingHistory,
+	loadOlderHistory,
+}: ConversationThreadProps) {
+	const [sendStatus, setSendStatus] = useState<ComposerSendStatus>({ phase: "idle", messageId: null });
 	const { data: me } = useMeQuery();
-
-	const {
-		selectedConversation,
-		hasChatInRoute,
-		presenceByUserId,
-		peerIsTyping,
-		messages,
-		chatError,
-		isHistoryLoading,
-		hasMoreHistory,
-		isLoadingMoreHistory,
-		isPrependingHistory,
-		loadOlderHistory,
-		invalidateConversations,
-	} = useConversationContext();
-
-	const { composerValue, composerError, isSending, sendStatus } = useMessageComposerContext();
-	const { handleComposerChange, handleComposerSubmit } = useTypingContext();
-
-	const hasActiveConversation = Boolean(selectedConversation);
 	const peerData = selectedConversation?.peer ?? null;
-	const contactName = peerData?.display_name ?? "";
+	const hasActiveConversation = Boolean(selectedConversation);
+	const hasChatInRoute = Boolean(selectedConversation?.id);
 
-	// ui state
 	const isResolvingConversation = hasChatInRoute && !hasActiveConversation;
 	const showInitialHistoryLoader = hasActiveConversation && isHistoryLoading && messages.length === 0;
-	const showPlaceholder = !hasActiveConversation && !isResolvingConversation;
-	const threadContainerClassName = hasChatInRoute
-		? "flex min-h-0 min-w-0 flex-1"
-		: "hidden md:flex md:min-h-0 md:min-w-0 md:flex-1";
 
-	// derived state
+	const messageListRef = useConversationThreadAutoScroll({
+		conversationId: selectedConversation?.id ?? 0,
+		messagesCount: messages.length,
+		isHistoryLoading,
+		isPrependingHistory,
+	});
+
+	if (isResolvingConversation || showInitialHistoryLoader) return <ChatLoader />;
+
+	if (!hasActiveConversation) return <ChatPlaceholder />;
+
 	const peerPresence: PresenceState | null = peerData
 		? (presenceByUserId[peerData.id] ?? {
 				is_online: peerData.is_online ?? false,
 				last_seen_at: peerData.last_seen_at,
 			})
 		: null;
-	const peerIsOnline = peerPresence?.is_online ?? false;
-	const peerLastSeenAt = peerPresence?.last_seen_at ?? null;
-	const presenceLabel = getPresenceLabel(peerIsOnline, peerLastSeenAt);
 
-	const messageListRef = useConversationThreadAutoScroll({
-		conversationId: selectedConversation?.id,
-		messagesCount: messages.length,
-		isHistoryLoading,
-		isPrependingHistory,
-	});
-
-	const handleBackToList = useCallback(() => {
-		navigate("/chat");
-		void invalidateConversations();
-	}, [navigate, invalidateConversations]);
-
-	if (isResolvingConversation || showInitialHistoryLoader) {
-		return <ChatLoader />;
-	}
-
-	if (showPlaceholder || !contactName) {
-		return (
-			<div className="hidden md:flex md:min-h-0 md:min-w-0 md:flex-1">
-				<ChatPlaceholder />
-			</div>
-		);
-	}
+	const presenceLabel = getPresenceLabel(
+		peerPresence?.is_online ?? false,
+		peerPresence?.last_seen_at ?? null,
+		peerIsTyping,
+	);
 
 	return (
-		<div className={threadContainerClassName}>
+		<div
+			className={
+				hasChatInRoute ? "flex min-h-0 min-w-0 flex-1" : "hidden md:flex md:min-h-0 md:min-w-0 md:flex-1"
+			}
+		>
 			<section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#F2F1F4]">
-				<ChatHeader
-					peerIsTyping={peerIsTyping}
-					contactName={contactName}
-					presenceLabel={presenceLabel}
-					onBackToList={hasChatInRoute ? handleBackToList : undefined}
-				/>
+				<ChatHeader contactName={peerData?.display_name ?? ""} presenceLabel={presenceLabel} />
 
 				<div ref={messageListRef} className="min-h-0 flex-1 overflow-y-auto border-l border-[#e5e7ee] p-8">
 					<ChatMessages
@@ -108,12 +95,10 @@ export function ConversationThread() {
 				</div>
 
 				<MessageComposer
-					value={composerValue}
-					onChange={handleComposerChange}
-					onSend={handleComposerSubmit}
+					selectedConversation={selectedConversation}
+					sendTyping={sendTyping}
 					disabled={!hasActiveConversation}
-					isSending={isSending}
-					error={composerError}
+					onSendStatusChange={setSendStatus}
 				/>
 			</section>
 		</div>

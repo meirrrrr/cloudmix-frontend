@@ -1,10 +1,9 @@
-import { useRef, useCallback } from "react";
+import { useRef } from "react";
 
 import { toChatMessage } from "@/features/chat-thread/lib/utils";
 import type { ComposerSendStatus } from "@/features/chat-main-panel/hooks/useMessageComposer";
-
 import type { ChatMessagePayload } from "../types";
-import { buildThreadItems } from "../lib/utils";
+import { buildThreadItems, getSendStatusDisplay } from "../lib/utils";
 import { DateDivider } from "./DateDivider";
 import { EmptyMessages } from "./EmptyMessages";
 import { MessageBubble } from "./MessageBubble";
@@ -34,28 +33,9 @@ export function ChatMessages({
 	const bottomAnchorRef = useRef<HTMLDivElement | null>(null);
 
 	const threadItems = buildThreadItems(messages);
-	const hasSentMessage = sendStatus.messageId
-		? messages.some((message) => message.id === sendStatus.messageId)
-		: false;
-	const shouldShowSendingState = sendStatus.phase === "sending";
-	const shouldShowSentState = sendStatus.phase === "sent" && hasSentMessage;
-	const shouldShowFailedState = sendStatus.phase === "failed";
-	const showStatus = shouldShowSendingState || shouldShowSentState || shouldShowFailedState;
-	const sendStatusText = shouldShowSendingState ? "Sending..." : shouldShowSentState ? "Sent" : "Failed to send";
-	const sendStatusClassName =
-		sendStatus.phase === "failed"
-			? "text-[#d14343]"
-			: sendStatus.phase === "sent"
-				? "text-[#3e7a1f]"
-				: "text-[#6f738f]";
 
-	const onLoadHistory = useCallback(async () => {
-		if (!onLoadOlderHistory || isLoadingMoreHistory) {
-			return;
-		}
-
-		await onLoadOlderHistory();
-	}, [onLoadOlderHistory, isLoadingMoreHistory]);
+	const hasSentMessage = Boolean(sendStatus.messageId && messages.some((m) => m.id === sendStatus.messageId));
+	const statusDisplay = getSendStatusDisplay(sendStatus, hasSentMessage);
 
 	return (
 		<div className="space-y-4">
@@ -64,7 +44,7 @@ export function ChatMessages({
 					<button
 						type="button"
 						onClick={() => {
-							void onLoadHistory();
+							if (!isLoadingMoreHistory) void onLoadOlderHistory?.();
 						}}
 						disabled={isLoadingMoreHistory || !onLoadOlderHistory}
 						className="inline-flex items-center gap-2 rounded-full border border-[#d9dbe7] bg-white/80 px-4 py-1.5 text-sm font-medium text-[#3d4159] shadow-sm transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
@@ -97,9 +77,12 @@ export function ChatMessages({
 			)}
 
 			{chatError ? <p className="text-sm text-[#d14343]">Chat error: {chatError}</p> : null}
-			{showStatus ? (
-				<p className={`text-right text-xs font-medium transition-opacity duration-200 ${sendStatusClassName}`}>
-					{sendStatusText}
+
+			{statusDisplay ? (
+				<p
+					className={`text-right text-xs font-medium transition-opacity duration-200 ${statusDisplay.className}`}
+				>
+					{statusDisplay.label}
 				</p>
 			) : null}
 		</div>

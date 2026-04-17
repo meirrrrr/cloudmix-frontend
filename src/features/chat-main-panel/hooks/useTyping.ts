@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 
 interface UseTypingOptions {
-	selectedConversationId: number | null;
+	selectedConversationId: number;
 	sendTyping: (isTyping: boolean) => void;
 	onComposerChange: (value: string) => void;
 }

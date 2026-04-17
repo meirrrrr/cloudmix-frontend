@@ -9,26 +9,15 @@ import { ChatLoader } from "@/shared/components/ChatLoader";
 
 export function App() {
 	const { data: user, isPending } = useMeQuery();
-
-	const sessionLoadingElement = <ChatLoader />;
-
-	const chatRouteElement = isPending ? sessionLoadingElement : user ? <ChatPage /> : <Navigate to="/login" replace />;
-
-	const chatIdRouteElement = isPending ? (
-		sessionLoadingElement
-	) : user ? (
-		<ChatPage />
-	) : (
-		<Navigate to="/login" replace />
-	);
+	if (isPending) return <ChatLoader />;
 
 	return (
 		<Routes>
 			<Route path="/" element={<WelcomePage />} />
-			<Route path="/chat" element={chatRouteElement} />
-			<Route path="/chat/:chatId" element={chatIdRouteElement} />
-			<Route path="/login" element={user ? <Navigate to="/chat" replace /> : <LoginPage />} />
-			<Route path="/register" element={user ? <Navigate to="/chat" replace /> : <RegistrationPage />} />
+			<Route path="/chat" element={user ? <ChatPage /> : <Navigate to="/login" replace />} />
+			<Route path="/chat/:chatId" element={user ? <ChatPage /> : <Navigate to="/login" replace />} />
+			<Route path="/login" element={!user ? <LoginPage /> : <ChatPage />} />
+			<Route path="/register" element={!user ? <RegistrationPage /> : <ChatPage />} />
 			<Route path="*" element={<Navigate to="/" replace />} />
 		</Routes>
 	);

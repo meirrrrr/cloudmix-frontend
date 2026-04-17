@@ -4,7 +4,11 @@ import type { ChatMessage } from "../../chat-messages/types";
 
 export const SKELETON_MESSAGE_ROWS = [0, 1, 2, 3, 4] as const;
 
-export function getPresenceLabel(peerIsOnline: boolean, peerLastSeenAt: string | null): string {
+export function getPresenceLabel(peerIsOnline: boolean, peerLastSeenAt: string | null, peerIsTyping = false): string {
+	if (peerIsTyping && peerIsOnline) {
+		return "typing...";
+	}
+
 	if (peerIsOnline) {
 		return "Online";
 	}

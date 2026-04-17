@@ -1,8 +1,8 @@
+import { useNavigate } from "react-router-dom";
+
 interface ChatHeaderProps {
 	contactName: string;
 	presenceLabel: string;
-	onBackToList?: () => void;
-	peerIsTyping: boolean;
 }
 
 function LeftArrowIcon() {
@@ -23,7 +23,12 @@ function LeftArrowIcon() {
 	);
 }
 
-export function ChatHeader({ contactName, presenceLabel, onBackToList, peerIsTyping }: ChatHeaderProps) {
+export function ChatHeader({ contactName, presenceLabel }: ChatHeaderProps) {
+	const navigate = useNavigate();
+	const handleBackToList = () => {
+		navigate("/chat");
+	};
+
 	return (
 		<div className="shrink-0 h-[90px] border-l border-b border-[#e5e7ee] bg-[#fbfbfd] px-4 py-4 md:px-8">
 			<div className="flex items-center gap-2 md:hidden">
@@ -31,7 +36,7 @@ export function ChatHeader({ contactName, presenceLabel, onBackToList, peerIsTyp
 					<div className="flex items-start gap-2">
 						<button
 							type="button"
-							onClick={() => onBackToList?.()}
+							onClick={handleBackToList}
 							className="inline-flex items-center justify-center rounded p-1 text-[#0D0D0D] transition-colors hover:hover:text-[#262a41]"
 							aria-label="Back to chats"
 						>
@@ -39,16 +44,14 @@ export function ChatHeader({ contactName, presenceLabel, onBackToList, peerIsTyp
 						</button>
 						<div className="flex flex-col gap-1">
 							<p className="truncate text-[18px] font-semibold text-[#262a41]">{contactName}</p>
-							<p className="text-[16px] text-[#8a8ea9] font-[400]">
-								{peerIsTyping ? "typing..." : presenceLabel}
-							</p>
+							<p className="text-[16px] text-[#8a8ea9] font-[400]">{presenceLabel}</p>
 						</div>
 					</div>
 				</div>
 			</div>
 			<div className="hidden h-full flex-col justify-center gap-1 md:flex">
 				<p className="text-lg font-semibold text-[#262a41]">{contactName}</p>
-				<p className="text-sm text-[#8a8ea9]">{peerIsTyping ? "typing..." : presenceLabel}</p>
+				<p className="text-sm text-[#8a8ea9]">{presenceLabel}</p>
 			</div>
 		</div>
 	);

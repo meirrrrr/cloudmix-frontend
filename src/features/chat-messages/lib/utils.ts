@@ -1,4 +1,5 @@
 import type { ChatMessagePayload, ThreadDividerItem, ThreadMessageItem } from "../types";
+import type { ComposerSendStatus } from "@/features/chat-main-panel/hooks/useMessageComposer";
 
 export function buildThreadItems(messages: ChatMessagePayload[]): Array<ThreadDividerItem | ThreadMessageItem> {
 	const items: Array<ThreadDividerItem | ThreadMessageItem> = [];
@@ -55,4 +56,14 @@ function formatDayLabel(date: Date): string {
 		month: "long",
 		year: "numeric",
 	});
+}
+
+export function getSendStatusDisplay(
+	sendStatus: ComposerSendStatus,
+	hasSentMessage: boolean,
+): { label: string; className: string } | null {
+	if (sendStatus.phase === "sending") return { label: "Sending...", className: "text-[#6f738f]" };
+	if (sendStatus.phase === "sent" && hasSentMessage) return { label: "Sent", className: "text-[#3e7a1f]" };
+	if (sendStatus.phase === "failed") return { label: "Failed to send", className: "text-[#d14343]" };
+	return null;
 }

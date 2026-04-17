@@ -1,12 +1,15 @@
 import type { FormEvent } from "react";
+import { useCallback, useEffect } from "react";
+import type { ComposerSendStatus } from "@/features/chat-main-panel/hooks/useMessageComposer";
+import { useMessageComposer } from "@/features/chat-main-panel/hooks/useMessageComposer";
+import { useTyping } from "@/features/chat-main-panel/hooks/useTyping";
+import type { Conversation } from "@/features/chat-main-panel/types";
 
 interface MessageComposerProps {
-	value: string;
-	onChange: (nextValue: string) => void;
-	onSend: () => void;
+	selectedConversation: Conversation | null;
+	sendTyping: (isTyping: boolean) => void;
 	disabled?: boolean;
-	isSending?: boolean;
-	error?: string | null;
+	onSendStatusChange?: (status: ComposerSendStatus) => void;
 }
 
 function SendIcon() {
@@ -21,20 +24,37 @@ function SendIcon() {
 }
 
 export function MessageComposer({
-	value,
-	onChange,
-	onSend,
+	selectedConversation,
+	sendTyping,
 	disabled = false,
-	isSending = false,
-	error = null,
+	onSendStatusChange,
 }: MessageComposerProps) {
-	function handleSubmit(event: FormEvent<HTMLFormElement>) {
-		event.preventDefault();
-		if (disabled || isSending) {
-			return;
-		}
-		onSend();
-	}
+	const { draftMessage, composerError, isSending, sendStatus, handleComposerChange, handleComposerSubmit } =
+		useMessageComposer({
+			selectedConversation,
+		});
+
+	const { stopTyping, handleTypingChange } = useTyping({
+		selectedConversationId: selectedConversation?.id ?? 0,
+		sendTyping,
+		onComposerChange: handleComposerChange,
+	});
+
+	useEffect(() => {
+		onSendStatusChange?.(sendStatus);
+	}, [sendStatus, onSendStatusChange]);
+
+	const handleSubmit = useCallback(
+		async (event: FormEvent<HTMLFormElement>) => {
+			event.preventDefault();
+			if (disabled || isSending) return;
+			await handleComposerSubmit();
+			stopTyping();
+		},
+		[disabled, isSending, handleComposerSubmit, stopTyping],
+	);
+
+	const isDisabled = disabled || !selectedConversation;
 
 	return (
 		<div className="shrink-0">
@@ -42,24 +62,22 @@ export function MessageComposer({
 				<form onSubmit={handleSubmit} className="flex flex-1 items-center gap-3">
 					<input
 						type="text"
-						value={value}
-						onChange={(event) => {
-							onChange(event.target.value);
-						}}
+						value={draftMessage}
+						onChange={(e) => handleTypingChange(e.target.value)}
 						placeholder="Write a message ..."
-						disabled={disabled || isSending}
+						disabled={isDisabled || isSending}
 						className="w-full border-none bg-transparent text-[16px] text-[#31354f] placeholder:text-[#180A29] placeholder:opacity-50 outline-none disabled:cursor-not-allowed disabled:opacity-60"
 					/>
 					<button
 						type="submit"
-						disabled={disabled || isSending || value.trim().length === 0}
+						disabled={isDisabled || isSending || draftMessage.trim().length === 0}
 						className="flex h-8 w-8 items-center justify-center text-[#a9adb7] transition hover:text-[#7a808d] disabled:cursor-not-allowed"
 						aria-label="Send message"
 					>
 						<SendIcon />
 					</button>
 				</form>
-				{error ? <p className="mt-1 text-sm text-[#d14343]">{error}</p> : null}
+				{composerError ? <p className="mt-1 text-sm text-[#d14343]">{composerError}</p> : null}
 			</div>
 		</div>
 	);

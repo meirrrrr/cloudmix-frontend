@@ -1,6 +1,9 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+import { markConversationRead } from "@/features/chat-main-panel/api/conversations-api";
+import type { Conversation } from "@/features/chat-main-panel/types";
 import { getConversationMessages } from "@/features/chat-messages/api/messages-api";
-import { CONVERSATION_HISTORY_QUERY_KEY } from "@/shared/lib/constants";
+import { CONVERSATION_HISTORY_QUERY_KEY, CONVERSATION_QUERY_KEY, CONVERSATIONS_QUERY_KEY } from "@/shared/lib/constants";
 
 export const INITIAL_HISTORY_LIMIT = 30;
 
@@ -35,6 +38,26 @@ export function useConversationHistoryQuery(conversationId: number | null) {
 
 			return undefined;
 		},
+		refetchOnWindowFocus: false,
 		retry: false,
+	});
+}
+
+export function useMarkConversationReadMutation() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: (conversationId: number) => markConversationRead(conversationId),
+		onSuccess: (_data, conversationId) => {
+			queryClient.setQueryData<Conversation | undefined>(
+				CONVERSATION_QUERY_KEY(conversationId),
+				(conversation) => (conversation ? { ...conversation, unread_count: 0 } : conversation),
+			);
+			queryClient.setQueryData<Conversation[] | undefined>(CONVERSATIONS_QUERY_KEY, (conversations) =>
+				conversations?.map((conversation) =>
+					conversation.id === conversationId ? { ...conversation, unread_count: 0 } : conversation,
+				),
+			);
+		},
 	});
 }
