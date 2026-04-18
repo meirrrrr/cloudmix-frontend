@@ -11,8 +11,8 @@ import { mergeMessages } from "../lib/utils";
 export function ChatMainPanel() {
 	const { chatId } = useParams<{ chatId?: string }>();
 	const routeConversationId = Number(chatId);
-	const hasChatInRoute =
-		Boolean(chatId) && Number.isFinite(routeConversationId) && routeConversationId > 0;
+
+	const hasChatInRoute = Boolean(chatId) && Number.isFinite(routeConversationId) && routeConversationId > 0;
 
 	const {
 		data: conversationData,

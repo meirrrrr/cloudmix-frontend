@@ -14,7 +14,11 @@ export function UserSearch() {
 	const isDebouncing = normalizedQuery !== normalizedDebouncedQuery;
 
 	const { data: searchUsers = [], isFetching } = useSearchQuery(normalizedDebouncedQuery);
-	const { mutate: createConversationMutation, isPending: isCreatingConversation } = useCreateConversationMutation();
+	const {
+		mutate: createConversationMutation,
+		isPending: isCreatingConversation,
+		variables: pendingPeerUserId,
+	} = useCreateConversationMutation();
 	const isSearching = isDebouncing || isFetching;
 
 	const handleQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -62,29 +66,54 @@ export function UserSearch() {
 					{isSearching ? (
 						<p className="px-3 py-2 text-sm text-[#8f94af]">Searching...</p>
 					) : searchUsers.length > 0 ? (
-						<ul className="max-h-[300px] overflow-y-auto">
-							{searchUsers.map((user) => {
-								return (
-									<li key={user.id} className="border-b border-[#f1f2f8] last:border-b-0">
-										<button
-											type="button"
-											className="flex w-full items-center justify-between px-3 py-2 text-left transition hover:bg-[#f8f8fe]"
-											onClick={() => {
-												handleSelectUser(user.id);
-											}}
-											disabled={isCreatingConversation}
-										>
-											<div className="flex flex-1 items-center justify-between">
-												<p className="text-sm font-medium text-[#2a2f46]">
-													{user.display_name}
-												</p>
-												<p className="text-xs text-[#8f94af]">@{user.username}</p>
-											</div>
-										</button>
-									</li>
-								);
-							})}
-						</ul>
+						<>
+							{isCreatingConversation && pendingPeerUserId !== undefined ? (
+								<div
+									className="flex items-center gap-2 border-b border-[#f1f2f8] px-3 py-2"
+									role="status"
+									aria-live="polite"
+									aria-busy="true"
+								>
+									<span
+										className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-[#c5cad8] border-t-[#5c6378]"
+										aria-hidden
+									/>
+									<p className="text-sm text-[#8f94af]">Starting conversation…</p>
+								</div>
+							) : null}
+							<ul className="max-h-[300px] overflow-y-auto">
+								{searchUsers.map((user) => {
+									const isStartingWithThisUser =
+										isCreatingConversation && pendingPeerUserId === user.id;
+									return (
+										<li key={user.id} className="border-b border-[#f1f2f8] last:border-b-0">
+											<button
+												type="button"
+												className="flex w-full items-center gap-2 px-3 py-2 text-left transition hover:bg-[#f8f8fe] disabled:cursor-wait disabled:opacity-70"
+												onClick={() => {
+													handleSelectUser(user.id);
+												}}
+												disabled={isCreatingConversation}
+												aria-busy={isStartingWithThisUser}
+											>
+												<div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+													<p className="truncate text-sm font-medium text-[#2a2f46]">
+														{user.display_name}
+													</p>
+													<p className="shrink-0 text-xs text-[#8f94af]">@{user.username}</p>
+												</div>
+												{isStartingWithThisUser ? (
+													<span
+														className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-[#c5cad8] border-t-[#5c6378]"
+														aria-hidden
+													/>
+												) : null}
+											</button>
+										</li>
+									);
+								})}
+							</ul>
+						</>
 					) : (
 						<p className="px-3 py-2 text-sm text-[#8f94af]">No users found.</p>
 					)}

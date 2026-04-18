@@ -1,4 +1,7 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+
+import { CONVERSATIONS_QUERY_KEY } from "@/shared/lib/constants";
 
 interface ChatHeaderProps {
 	contactName: string;
@@ -25,7 +28,9 @@ function LeftArrowIcon() {
 
 export function ChatHeader({ contactName, presenceLabel }: ChatHeaderProps) {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const handleBackToList = () => {
+		void queryClient.invalidateQueries({ queryKey: CONVERSATIONS_QUERY_KEY });
 		navigate("/chat");
 	};
 

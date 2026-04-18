@@ -19,12 +19,13 @@ export function SidebarConversationItem({ conversation, isSelected }: SidebarCon
 	const handleSelectConversation = (conversationId: number) => {
 		navigate(`/chat/${conversationId}`);
 	};
+
 	return (
 		<li className="border-b border-[#eceef4]">
 			<button
 				type="button"
 				onClick={() => handleSelectConversation(conversation.id)}
-				className={`h-[90px] w-full px-6 py-4 text-left transition hover:bg-[#F2F1F4] ${isSelected ? "bg-[#F2F1F4]" : ""}`}
+				className={`h-[90px] w-full px-6 py-4 text-left transition [-webkit-tap-highlight-color:transparent] hover:bg-[#F2F1F4] active:bg-[#F2F1F4] ${isSelected ? "bg-[#F2F1F4]" : ""}`}
 			>
 				<div className="flex items-start justify-between gap-3">
 					<div className="flex flex-col items-start justify-between">

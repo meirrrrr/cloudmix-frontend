@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 
 import { useMeQuery } from "@/features/auth/api/useAuthQuery";
-import { AuthShellLoader } from "@/shared/components/AuthShellLoader";
+import { GuestAuthLoader } from "@/shared/components/GuestAuthLoader";
 
 type GuestRouteProps = {
 	children: ReactNode;
@@ -11,7 +11,7 @@ type GuestRouteProps = {
 export function GuestRoute({ children }: GuestRouteProps) {
 	const { data: user, isPending } = useMeQuery();
 
-	if (isPending) return <AuthShellLoader />;
+	if (isPending) return <GuestAuthLoader />;
 	if (user) return <Navigate to="/chat" replace />;
 
 	return children;
